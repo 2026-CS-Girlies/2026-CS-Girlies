@@ -51,7 +51,7 @@ export default function LandingPage({ onBegin, bg, onBgChange, isLight, soundId,
       {/* Desktop privacy note — bottom center, very subtle */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 hidden md:flex flex-col items-center gap-1.5 text-center pointer-events-none select-none" style={{ opacity: 0.42 }}>
         <p className="text-[11px] leading-relaxed max-w-md" style={{ fontFamily: 'Inter, sans-serif', color: c.text }}>
-          <span className="font-medium">{PRIVACY_NOTE.title}.</span>{' '}{PRIVACY_NOTE.body}
+          {PRIVACY_NOTE.body}
         </p>
         <button
           className="text-[11px] underline underline-offset-2 pointer-events-auto transition-opacity hover:opacity-80"
