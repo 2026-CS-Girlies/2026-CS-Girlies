@@ -1,5 +1,5 @@
 from CR.stages import CRStage, IdentificationPhase, RestructuringPhase
-from CR.prompt import get_chat_prompt
+from CR.prompt import get_chat_prompt, get_summary_prompt
 from Sun.model_client import ModelClient
 
 class CRHelper:
@@ -14,8 +14,8 @@ class CRHelper:
         self.intermediate_belief = None
         self.cognitive_distortion = None
 
-        self.evidence_for = []
-        self.evidence_against = []
+        #self.evidence_for = []
+        #self.evidence_against = []
 
         self.balanced_thought = None
 
@@ -123,7 +123,12 @@ class CRHelper:
             self.phase = None
 
         print("[!CR PROCESS COMPLETE!]")
-        print(f"[history]\n {self.history}")
+        dialogue = self.get_dialogue()
+        print(f"[dialogue]\n {dialogue}")
+
+        summary = self.summarize(dialogue)
+
+        return summary
 
     def is_complete(self):
         return self.stage == CRStage.COMPLETE
@@ -169,7 +174,7 @@ class CRHelper:
             self.last_message = None
 
             self.complete()
-            return None
+            return
 
         # unresolved -> continue prosecution
         message = self.last_message
@@ -179,3 +184,37 @@ class CRHelper:
         self.phase = RestructuringPhase.PROSECUTION
 
         return self.chat(message)
+
+    def get_dialogue(self):
+        dialogue = []
+
+        for message in self.history:
+            if message["role"] == "user":
+                role = "User"
+            elif message["role"] == "assistant":
+                role = "Assistant"
+            else:
+                continue
+
+            dialogue.append(f"{role}: {message['content']}")
+
+        return "\n".join(dialogue)
+
+    def summarize(self, dialogue):
+        system_prompt = get_summary_prompt()
+
+        result = self.model_client.summarize(system_prompt=system_prompt, dialogue=dialogue)
+
+        self.intermediate_belief = result["intermediate_belief"]
+        self.core_belief = result["core_belief"]
+        self.core_belief_inferred = result["core_belief_inferred"]
+        self.balanced_thought = result["balanced_thought"]
+        self.current_progress = result["current_progress"]
+        self.next_steps = result["next_steps"]
+
+        print("[SUMMARY]")
+        print(result)
+
+        return result
+
+

@@ -57,11 +57,32 @@ Do not generate a conversational response.
 """
 
 SUMMARY_PROMPT = """
-Give a concise final summary with Situation, Original Thought, Underlying Belief,
-Evidence For, Evidence Against, Balanced Verdict, and One Small Next Step.
-Do not ask another question.
-"""
+Analyze the dialogue and identify the user's cognitive structure and progress.
 
+Identify the user's intermediate belief as an underlying assumption, rule,
+expectation, or conditional belief. Do not confuse it with a situation-specific
+automatic thought.
+
+Identify the user's deeper core belief about themselves, others, or the world.
+If the core belief is inferred rather than explicitly stated, mark
+core_belief_inferred as true.
+
+Identify the balanced thought the user developed during the conversation.
+Prefer the user's own words when possible rather than creating a new statement.
+
+Summarize the progress the user has already made in restructuring the negative belief.
+
+Then provide the next CBT steps for how the assistant should continue supporting
+the user if further work is needed.
+
+The next_steps must describe the assistant's therapeutic actions, such as what
+the assistant should explore, clarify, question, or reinforce.
+Do not provide homework, journaling tasks, affirmations, exercises, or other
+tasks for the user.
+
+Base all conclusions only on the dialogue.
+Do not invent unsupported beliefs or progress.
+"""
 def get_chat_prompt(stage, phase):
     if stage == CRStage.IDENTIFICATION:
         if phase == IdentificationPhase.THOUGHT_EXPLORATION:
@@ -84,3 +105,6 @@ def get_chat_prompt(stage, phase):
         raise ValueError(f"Unsupported stage/phase: {stage}, {phase}")
 
     return COMMON_PROMPT + "\n\n" + phase_prompt
+
+def get_summary_prompt():
+    return SUMMARY_PROMPT

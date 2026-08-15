@@ -44,12 +44,36 @@ class ModelClient:
             print(result)
             raise
 
-    def summarize(self, system_prompt, history):
-        return self._request(
-            model=config.SUMMARY_MODEL,
-            system_prompt=system_prompt,
-            history=history
-        )
+    def summarize(self, system_prompt, dialogue):
+        result = self._request(model=config.SUMMARY_MODEL, system_prompt=system_prompt,
+            history=[
+            {
+                "role": "user",
+                "content": dialogue
+            }
+        ], response_format=config.SUMMARY_RESPONSE_SCHEMA)
+
+        try:
+            data = json.loads(result)
+
+            return {
+                "intermediate_belief": data["intermediate_belief"],
+                "core_belief": data["core_belief"],
+                "core_belief_inferred": data["core_belief_inferred"],
+                "balanced_thought": data["balanced_thought"],
+                "current_progress": data["current_progress"],
+                "next_steps": data["next_steps"],
+            }
+
+        except json.JSONDecodeError:
+            print("[ERROR] Invalid summary JSON response:")
+            print(result)
+            raise
+
+        except KeyError as e:
+            print(f"[ERROR] Missing summary field: {e}")
+            print(result)
+            raise
 
     def _request(self, model, system_prompt, history, response_format=None):
         payload = {

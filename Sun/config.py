@@ -62,3 +62,39 @@ VERDICT_RESPONSE_SCHEMA = {
         "rationale"
     ]
 }
+
+SUMMARY_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "automatic_thought": {
+            "type": ["string", "null"]
+        },
+        "core_belief": {
+            "type": ["string", "null"]
+        },
+        "core_belief_inferred": {
+            "type": "boolean"
+        },
+        "balanced_thought": {
+            "type": ["string", "null"]
+        },
+        "current_progress": {
+            "type": "string"
+        },
+        "next_steps": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": [
+        "intermediate_belief",
+        "core_belief",
+        "core_belief_inferred",
+        "balanced_thought",
+        "current_progress",
+        "next_steps"
+    ],
+    "additionalProperties": False
+}
