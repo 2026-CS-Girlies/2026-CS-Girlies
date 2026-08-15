@@ -76,3 +76,25 @@ export type DATConversationResponse = {
   stage_complete: boolean
   result?: FinalReflectionData
 }
+
+// for one-step conversation
+
+export type ModelSummaryData = {
+  automatic_thought: string
+  intermediate_belief: string
+  core_belief: string
+  core_belief_inferred: boolean
+  balanced_thought: string
+  current_progress: string
+  next_steps: string[]
+}
+
+
+export type OneStepConversationResponse = {
+  conversation_id: string
+  stage: string
+  phase: string | null
+  message: string | null
+  data: ModelSummaryData | null
+  stage_complete: boolean
+}
