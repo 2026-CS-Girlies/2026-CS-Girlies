@@ -1,5 +1,6 @@
 export type Screen =
   | 'landing'
+  | 'receiving'
   | 'firstConversation'
   | 'review'
   | 'secondConversation'
