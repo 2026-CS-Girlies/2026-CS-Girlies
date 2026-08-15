@@ -1,14 +1,15 @@
 import { RotateCcw } from 'lucide-react'
 import { bgStyle } from '@/theme/background'
 import { tk } from '@/theme/tokens'
-import type { CTReviewData, FinalReflectionData } from '@/types/conversation'
+import type { CTReviewData, FinalReflectionData, ModelSummaryData } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
 
 type ReflectionFlow = 'two-step' | 'one-step'
 
 type Props = {
-  ctReview: CTReviewData
-  result: FinalReflectionData
+  ctReview?: CTReviewData
+  result?: FinalReflectionData
+  modelSummary?: ModelSummaryData
   bg: BgConfig
   isLight: boolean
   flow: ReflectionFlow
@@ -16,7 +17,7 @@ type Props = {
   onRestart: () => void
 }
 
-export default function FinalReflectionPage({ ctReview, result, bg, isLight, flow, onBack, onRestart }: Props) {
+export default function FinalReflectionPage({ ctReview, result, modelSummary, bg, isLight, flow, onBack, onRestart }: Props) {
   const c = tk(isLight)
   // dynamic flow
   const currentStep =
@@ -24,6 +25,25 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, flo
 
   const totalSteps =
     flow === 'one-step' ? '02' : '04'
+
+  const getOneStepItems = (modelSummary?: ModelSummaryData) => [
+  ['What the Thought May Be Connected To', modelSummary?.intermediate_belief],
+  ['A Deeper Belief That May Be Present', modelSummary?.core_belief],
+  ['A More Balanced Thought', modelSummary?.balanced_thought],
+  ['Where You Are Now', modelSummary?.current_progress],
+  ['One Small Next Step', modelSummary?.next_steps?.[0]],
+  ] as const
+
+  const getTwoStepItems = (ctReview?: CTReviewData, result?: FinalReflectionData) => [
+    ['The Situation', result?.situation || ctReview?.situation],
+    ['The Original Thought', result?.original_thought || ctReview?.automatic_thought],
+    ['Why It Felt True', result?.why_it_felt_true],
+    ['What It May Have Left Out', result?.what_it_may_have_left_out],
+    ['A More Balanced Thought', result?.balanced_thought],
+    ['One Small Next Step', result?.next_step],
+  ] as const
+
+  const items = flow === 'one-step' ? getOneStepItems(modelSummary) : getTwoStepItems(ctReview, result)
 
   // file download function
   //TODO: Encrypt the reflection data and save it to a file for download
@@ -45,23 +65,9 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, flo
       Date
       ${formattedDate}
 
-      The Situation
-      ${result.situation || ctReview.situation}
-
-      The Original Thought
-      ${result.original_thought || ctReview.automatic_thought}
-
-      Why It Felt True
-      ${result.why_it_felt_true}
-
-      What It May Have Left Out
-      ${result.what_it_may_have_left_out}
-
-      A More Balanced Thought
-      ${result.balanced_thought}
-
-      One Small Next Step
-      ${result.next_step}
+      ${items
+        .map(([label, value]) => `${label}\n${value || '—'}`)
+        .join('\n\n')}
       `.trim()
 
     const blob = new Blob([content], {
@@ -81,13 +87,6 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, flo
     URL.revokeObjectURL(url)
   }
 
-
-  const items = [
-    ['The Situation', result.situation || ctReview.situation],
-    ['The Original Thought', result.original_thought || ctReview.automatic_thought],
-    ['A More Balanced Thought', result.balanced_thought],
-    ['One Small Next Step', result.next_step],
-  ] as const
 
   return (
     <div className="relative w-full h-full flex flex-col overflow-auto px-5 md:px-8 py-6 transition-all duration-500" style={bgStyle(bg)}>

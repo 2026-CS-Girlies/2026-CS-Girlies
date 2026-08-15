@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { RotateCcw } from 'lucide-react'
 import SendIcon from '@/components/common/SendIcon'
-import { sendCTMessage, sendDATMessage, startConversation, startDAT } from '@/services/conversationApi'
+import { startOneStepConversation, sendConversationMessage } from '@/services/conversationApi'
 import { bgStyle } from '@/theme/background'
 import { tk } from '@/theme/tokens'
 import type { Message } from '@/types/chat'
-import type { CBTStage, CTReviewData, DATStateData, FinalReflectionData } from '@/types/conversation'
+import type { ModelSummaryData } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
 
 type Props = {
   thought: string
   bg: BgConfig
   isLight: boolean
-  onComplete: (conversationId: string, reviewData: CTReviewData, result: FinalReflectionData) => void
+  onComplete: (conversationId: string, summary: ModelSummaryData) => void
   onBack: () => void
   onRestart: () => void
 }
@@ -20,15 +20,13 @@ type Props = {
 export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart }: Props) {
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
-  const [stage, setStage] = useState<CBTStage>('ct_guided_identification')
-  const [ctReview, setCtReview] = useState<CTReviewData | null>(null)
-  const [datState, setDatState] = useState<DATStateData | null>(null)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isComplete, setIsComplete] = useState(false)
-  const [result, setResult] = useState<FinalReflectionData | null>(null)
+  const [summary, setSummary] = useState<ModelSummaryData | null>(null)
   const [error, setError] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
+  
 
   const menuRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -52,14 +50,27 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
         setIsLoading(true)
         setError('')
 
-        const response = await startConversation(thought)
+        const response = await startOneStepConversation(thought)
+
+        console.log('[START RESPONSE]', response)
 
         setConversationId(response.conversation_id)
-        setStage(response.stage)
-        setCtReview(response.data)
 
-        if (response.message) {
-          setMessages([{ id: Date.now(), role: 'assistant', text: response.message }])
+        const assistantMessage = response.message
+
+
+        if (assistantMessage) {
+          setMessages([{ id: Date.now(), role: 'assistant', text: assistantMessage }])
+        }
+
+        if (response.stage_complete && response.data) {
+          setSummary(response.data)
+          setIsComplete(true)
+
+          onComplete(response.conversation_id, response.data)
+
+          return
+
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not start the conversation.')
@@ -95,43 +106,23 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       setIsLoading(true)
       setError('')
 
-      if (stage === 'ct_guided_identification') {
-        const response = await sendCTMessage(conversationId, trimmed)
-        const latestCTData = response.data
+      const response = await sendConversationMessage(conversationId, trimmed)
+      const assistantMessage = response.message
 
-        setCtReview(latestCTData)
+      // console.log('[MESSAGE RESPONSE]', response)
 
-        if (response.message) {
-          setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', text: response.message }])
-        }
-
-        if (response.stage_complete) {
-          const datResponse = await startDAT(conversationId, latestCTData)
-
-          setStage('dat_driven_restructuring')
-          setDatState(datResponse.data)
-          setIsComplete(datResponse.stage_complete)
-
-          if (datResponse.result) setResult(datResponse.result)
-
-          if (datResponse.message) {
-            setMessages(prev => [...prev, { id: Date.now() + 2, role: 'assistant', text: datResponse.message }])
-          }
-        }
-
-        return
+      if (assistantMessage) {
+        setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', text: assistantMessage }])
       }
 
-      const response = await sendDATMessage(conversationId, trimmed)
+      if (response.stage_complete && response.data) {
+        const summaryData = response.data as ModelSummaryData
 
-      setDatState(response.data)
-      setStage(response.stage)
-      setIsComplete(response.stage_complete)
+        console.log('[SUMMARY]', summaryData)
 
-      if (response.result) setResult(response.result)
-
-      if (response.message) {
-        setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', text: response.message }])
+        setSummary(summaryData)
+        setIsComplete(true)
+        setShowReadyPrompt(true)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the message.')
@@ -145,10 +136,12 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   }
 
   const goToReflection = () => {
-    if (conversationId && ctReview && result && isComplete) {
-      onComplete(conversationId, ctReview, result)
+    if (conversationId && summary && isComplete) {
+      onComplete(conversationId, summary)
     }
   }
+
+  const [showReadyPrompt, setShowReadyPrompt] = useState(false)
 
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden transition-all duration-500" style={bgStyle(bg)}>
@@ -156,7 +149,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
 
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-5 md:px-8 pt-6 md:pt-8 pb-3 md:pb-4 flex-none gap-2">
-        <div className="flex items-baseline gap-1" style={{ fontFamily: 'Instrument Serif, serif' }}>
+        <div className="flex items-baseline gap-1" style={{ fontFamily: 'In, serif' }}>
           <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>01</span>
           <span className="text-[18px] md:text-[24px]" style={{ color: c.textFaint }}> / </span>
           <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>02</span>
@@ -207,6 +200,18 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
             </div>
           ))}
 
+          {showReadyPrompt && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] md:max-w-[75%] px-5 py-4 rounded-[18px]" style={{ fontFamily: 'Inter, sans-serif', background: c.asstBubbleBg, border: `1px solid ${c.asstBubbleBorder}`, color: c.asstBubbleText }}>
+                <p className="text-sm font-medium leading-relaxed">We’ve gathered enough evidence.<br />Ready to build a more balanced view?</p>
+                <div className="flex items-center gap-3 mt-4">
+                  <button onClick={() => {setShowReadyPrompt(false); setIsComplete(false)}} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ color: c.textMuted, border: `1px solid ${c.border}` }}>Not Yet</button>
+                  <button onClick={goToReflection} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ background: c.sendBg, border: `1px solid ${c.sendBorder}`, color: c.text }}>Yes, I’m Ready →</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isLoading && <div className="text-sm" style={{ color: c.textMuted }}>Thinking…</div>}
           {error && <div className="text-sm text-[#ff6b6b]">{error}</div>}
           <div ref={bottomRef} />
@@ -236,7 +241,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       <div className="px-4 md:px-8 pt-2 pb-4 flex-none flex items-center justify-between">
         <button onClick={onBack} className="hidden md:block text-sm hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>← HOME</button>
         <div className="md:hidden" />
-        <button onClick={goToReflection} disabled={!isComplete || !result || !ctReview || !conversationId || !datState} className="text-sm disabled:opacity-30 hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>
+        <button onClick={goToReflection} disabled={!isComplete || !summary || !conversationId} className="text-sm disabled:opacity-30 hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>
           SEE MY REFLECTION →
         </button>
       </div>

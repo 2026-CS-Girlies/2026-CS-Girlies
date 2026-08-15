@@ -12,7 +12,7 @@ import ConversationPage from './pages/ConversationPage'
 
 
 import { hexLuminance, measureImageBrightness } from './theme/background'
-import type { CTReviewData, FinalReflectionData } from './types/conversation'
+import type { CTReviewData, FinalReflectionData, ModelSummaryData} from './types/conversation'
 import type { Screen } from './types/navigation'
 import type { BgConfig, SoundId, ThemeId } from './types/theme'
 
@@ -33,6 +33,7 @@ export default function App() {
 
   // Flow
   const [reflectionFlow, setReflectionFlow] = useState<'two-step' | 'one-step'>('one-step')
+  const [modelSummary, setModelSummary] = useState<ModelSummaryData | null>(null)
 
   // theme and sound effects
   useAmbientSound(soundId)
@@ -50,6 +51,7 @@ export default function App() {
     setConversationId(null)
     setCtReview(null)
     setFinalReflection(null)
+    setModelSummary(null)
     setScreen('landing')
   }
 
@@ -95,10 +97,9 @@ export default function App() {
           thought={thought}
           bg={bg}
           isLight={isLight}
-          onComplete={(id, ctData, result) => {
+          onComplete={(id, summary) => {
             setConversationId(id)
-            setCtReview(ctData)
-            setFinalReflection(result)
+            setModelSummary(summary)
             setReflectionFlow('one-step')
             setScreen('finalReflection')
           }}
@@ -157,10 +158,13 @@ export default function App() {
       )}
 
       {/* 04 / 04 — Final reflection */}
-      {screen === 'finalReflection' && ctReview && finalReflection && (
+      {screen === 'finalReflection' && (
+        (reflectionFlow === 'one-step' ? modelSummary !== null : ctReview !== null && finalReflection !== null) &&(
+        
         <FinalReflectionPage
-          ctReview={ctReview}
-          result={finalReflection}
+          ctReview={ctReview ?? undefined}
+          result={finalReflection ?? undefined}
+          modelSummary={modelSummary ?? undefined}
           bg={bg}
           isLight={isLight}
           flow={reflectionFlow}
@@ -173,7 +177,7 @@ export default function App() {
           }}
           onRestart={restart}
         />
-      )}
+      ))}
 
       {screen === 'howItWorks' && (
         <>
