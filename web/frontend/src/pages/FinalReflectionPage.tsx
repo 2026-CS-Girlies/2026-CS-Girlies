@@ -4,18 +4,28 @@ import { tk } from '@/theme/tokens'
 import type { CTReviewData, FinalReflectionData } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
 
+type ReflectionFlow = 'two-step' | 'one-step'
+
 type Props = {
   ctReview: CTReviewData
   result: FinalReflectionData
   bg: BgConfig
   isLight: boolean
+  flow: ReflectionFlow
   onBack: () => void
   onRestart: () => void
 }
 
-export default function FinalReflectionPage({ ctReview, result, bg, isLight, onBack, onRestart }: Props) {
+export default function FinalReflectionPage({ ctReview, result, bg, isLight, flow, onBack, onRestart }: Props) {
   const c = tk(isLight)
+  // dynamic flow
+  const currentStep =
+    flow === 'one-step' ? '02' : '04'
 
+  const totalSteps =
+    flow === 'one-step' ? '02' : '04'
+
+  // file download function
   //TODO: Encrypt the reflection data and save it to a file for download
   const handleDownload = () => {
 
@@ -85,9 +95,9 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, onB
 
       <div className="relative z-10 flex items-center justify-between pb-4">
         <div className="flex items-baseline gap-1" style={{ fontFamily: 'Instrument Serif, serif' }}>
-          <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>04</span>
+          <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>{currentStep}</span>
           <span className="text-[18px] md:text-[24px]" style={{ color: c.textFaint }}> / </span>
-          <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>04</span>
+          <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>{totalSteps}</span>
         </div>
         <button onClick={onRestart} className="hidden md:flex gap-2 text-sm hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>
           <RotateCcw size={18} /> START A NEW REFLECTION
