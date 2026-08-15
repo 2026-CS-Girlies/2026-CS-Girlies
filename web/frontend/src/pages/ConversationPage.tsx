@@ -8,23 +8,36 @@ import ChatBubble from '@/components/chat/ChatBubble'
 import { startOneStepConversation, sendConversationMessage } from '@/services/conversationApi'
 import { tk } from '@/theme/tokens'
 import type { Message } from '@/types/chat'
-import type { ModelSummaryData } from '@/types/conversation'
+import type { ModelSummaryData, OneStepConversationResponse } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
+
+// type Props = {
+//   thought: string
+//   bg: BgConfig
+//   isLight: boolean
+//   onComplete: (conversationId: string, summary: ModelSummaryData) => void
+//   onBack: () => void
+//   onRestart: () => void
+// }
 
 type Props = {
   thought: string
+  initialConversation: OneStepConversationResponse
   bg: BgConfig
   isLight: boolean
-  onComplete: (conversationId: string, summary: ModelSummaryData) => void
   onBack: () => void
   onRestart: () => void
+  onComplete: (conversationId: string, summary: ModelSummaryData) => void
 }
 
-export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart }: Props) {
-  const [conversationId, setConversationId] = useState<string | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
+export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart, initialConversation }: Props) {
+  const [conversationId, setConversationId] = useState<string>(initialConversation.conversation_id)
+  const [messages, setMessages] = useState<Message[]>(()=>{
+    if (!initialConversation.message) return []
+    return [{ id: Date.now(), role: 'assistant', text: initialConversation.message }]
+  })
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [summary, setSummary] = useState<ModelSummaryData | null>(null)
   const [error, setError] = useState('')
@@ -33,7 +46,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
 
   const menuRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const startedRef = useRef(false)
+  // const startedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const c = tk(isLight)
 
@@ -41,39 +54,39 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   useEffect(() => {
     if (!isLoading && !isComplete) {inputRef.current?.focus()}}, [isLoading, isComplete])
 
-  useEffect(() => {
-    if (startedRef.current) return
-    startedRef.current = true
+  // useEffect(() => {
+  //   if (startedRef.current) return
+  //   startedRef.current = true
 
-    const begin = async () => {
-      try {
-        setIsLoading(true)
-        setError('')
+  //   const begin = async () => {
+  //     try {
+  //       setIsLoading(true)
+  //       setError('')
 
-        const response = await startOneStepConversation(thought)
-        // console.log('[START RESPONSE]', response)
-        setConversationId(response.conversation_id)
+  //       const response = await startOneStepConversation(thought)
+  //       // console.log('[START RESPONSE]', response)
+  //       setConversationId(response.conversation_id)
 
-        const assistantMessage = response.message
-        if (assistantMessage) {
-          setMessages([{ id: Date.now(), role: 'assistant', text: assistantMessage }])
-        }
+  //       const assistantMessage = response.message
+  //       if (assistantMessage) {
+  //         setMessages([{ id: Date.now(), role: 'assistant', text: assistantMessage }])
+  //       }
 
-        if (response.stage_complete && response.data) {
-          setSummary(response.data)
-          setIsComplete(true)
-          onComplete(response.conversation_id, response.data)
-          return
+  //       if (response.stage_complete && response.data) {
+  //         setSummary(response.data)
+  //         setIsComplete(true)
+  //         onComplete(response.conversation_id, response.data)
+  //         return
 
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not start the conversation.')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    void begin()
-  }, [thought])
+  //       }
+  //     } catch (err) {
+  //       setError(err instanceof Error ? err.message : 'Could not start the conversation.')
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   }
+  //   void begin()
+  // }, [thought])
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
