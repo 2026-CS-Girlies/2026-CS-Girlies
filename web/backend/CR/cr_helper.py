@@ -207,7 +207,7 @@ class CRHelper:
 
         self.intermediate_belief = result["intermediate_belief"]
         self.core_belief = result["core_belief"]
-        self.core_belief_inferred = result["core_belief_inferred"]
+        # self.core_belief_inferred = result["core_belief_inferred"]
         self.balanced_thought = result["balanced_thought"]
         self.current_progress = result["current_progress"]
         self.next_steps = result["next_steps"]

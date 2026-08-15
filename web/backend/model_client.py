@@ -60,6 +60,7 @@ class ModelClient:
                 "automatic_thought": data.get("automatic_thought", ""),
                 "intermediate_belief": data.get("intermediate_belief", ""),
                 "core_belief": data.get("core_belief", ""),
+                "core_belief_inferred": data.get("core_belief_inferred", False),
                 "balanced_thought": data.get("balanced_thought", ""),
                 "current_progress": data.get("current_progress", ""),
                 "next_steps": data.get("next_steps", []),
