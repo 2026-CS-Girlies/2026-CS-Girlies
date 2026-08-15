@@ -31,6 +31,10 @@ export default function App() {
   const [soundId, setSoundId] = useState<SoundId>('none')
   const [activeThemeId, setActiveThemeId] = useState<ThemeId | null>('none')
 
+  // Flow
+  const [reflectionFlow, setReflectionFlow] = useState<'two-step' | 'one-step'>('one-step')
+
+  // theme and sound effects
   useAmbientSound(soundId)
 
   useEffect(() => {
@@ -95,6 +99,7 @@ export default function App() {
             setConversationId(id)
             setCtReview(ctData)
             setFinalReflection(result)
+            setReflectionFlow('one-step')
             setScreen('finalReflection')
           }}
           onBack={() => setScreen('landing')}
@@ -144,6 +149,7 @@ export default function App() {
           onComplete={result => {
             setFinalReflection(result)
             setScreen('finalReflection')
+            setReflectionFlow('two-step')
           }}
           onBack={() => setScreen('review')}
           onRestart={restart}
@@ -157,7 +163,14 @@ export default function App() {
           result={finalReflection}
           bg={bg}
           isLight={isLight}
-          onBack={() => setScreen('secondConversation')}
+          flow={reflectionFlow}
+          onBack={() => {
+            if (reflectionFlow === 'one-step') {
+              setScreen('conversation')
+            } else {
+              setScreen('secondConversation')
+            }
+          }}
           onRestart={restart}
         />
       )}
