@@ -156,7 +156,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
 
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-5 md:px-8 pt-6 md:pt-8 pb-3 md:pb-4 flex-none gap-2">
-        <div className="flex items-baseline gap-1" style={{ fontFamily: 'Libre Baskerville, serif' }}>
+        <div className="flex items-baseline gap-1" style={{ fontFamily: 'Instrument Serif, serif' }}>
           <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>01</span>
           <span className="text-[18px] md:text-[24px]" style={{ color: c.textFaint }}> / </span>
           <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>02</span>

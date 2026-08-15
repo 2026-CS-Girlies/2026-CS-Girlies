@@ -94,7 +94,7 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, flo
       {bg.type === 'image' && <div className="absolute inset-0 pointer-events-none" style={{ background: c.imgOverlay }} />}
 
       <div className="relative z-10 flex items-center justify-between pb-4">
-        <div className="flex items-baseline gap-1" style={{ fontFamily: 'Libre Baskerville, serif' }}>
+        <div className="flex items-baseline gap-1" style={{ fontFamily: 'Instrument Serif, serif' }}>
           <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>{currentStep}</span>
           <span className="text-[18px] md:text-[24px]" style={{ color: c.textFaint }}> / </span>
           <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>{totalSteps}</span>
