@@ -1,7 +1,9 @@
 import type {
+  ConversationMessageRequest,
   CTConversationResponse,
   CTReviewData,
   DATConversationResponse,
+  OneStepConversationResponse,
   StartConversationRequest,
   UpdateCTReviewRequest,
 } from '@/types/conversation'
@@ -62,4 +64,25 @@ export function sendDATMessage(conversationId: string, message: string) {
     method: 'POST',
     body: JSON.stringify({ message }),
   })
+}
+
+
+export function startOneStepConversation(initialThought: string): Promise<OneStepConversationResponse> {
+  const body: StartConversationRequest = {initial_thought: initialThought,}
+
+  return request<OneStepConversationResponse>('/api/conversations',{
+      method: 'POST',
+      body: JSON.stringify(body),
+    }
+  )
+}
+
+export function sendConversationMessage(conversationId: string, message: string): Promise<OneStepConversationResponse> {
+  const body: ConversationMessageRequest = {message,}
+
+  return request<OneStepConversationResponse>(`/api/conversations/${conversationId}/messages`,{
+      method: 'POST',
+      body: JSON.stringify(body),
+    }
+  )
 }

@@ -90,7 +90,7 @@ export type ModelSummaryData = {
 }
 
 
-export type ConversationResponse = {
+export type OneStepConversationResponse = {
   conversation_id: string
   stage: string
   phase: string | null
