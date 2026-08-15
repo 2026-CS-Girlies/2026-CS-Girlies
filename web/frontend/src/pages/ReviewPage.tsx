@@ -75,12 +75,12 @@ export default function ReviewPage({ conversationId, data, bg, isLight, onChange
               {editing ? (
                 <textarea value={draft[key]} onChange={e => updateField(key, e.target.value)} rows={2} className="w-full resize-none rounded-xl px-4 py-3 text-center outline-none" style={{ fontFamily: 'Inter, sans-serif', color: c.cardText, background: c.inputBg, border: `1px solid ${c.inputBorder}` }} />
               ) : (
-                <p className="text-[clamp(15px,2vw,22px)] leading-snug" style={{ fontFamily: 'Instrument Serif, serif', color: c.cardText }}>{draft[key] || '—'}</p>
+                <p className="text-[clamp(18px,2vw,22px)] leading-snug" style={{ fontFamily: 'Instrument Serif, serif', color: c.cardText }}>{draft[key] || '—'}</p>
               )}
-            </div>
+            </div> 
           ))}
 
-          <p className="text-sm text-center" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>This is only an interpretation—not a diagnosis. You have the final say.</p>
+          <p className="text-sm text-center" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>This is only an interpretation not a final decision. You have the final say.</p>
           {error && <p className="text-sm text-center text-[#ff6b6b]">{error}</p>}
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">

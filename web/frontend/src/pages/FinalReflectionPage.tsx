@@ -50,7 +50,7 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, onB
           {items.map(([label, value]) => (
             <div key={label} className="text-center">
               <p className="text-sm mb-2" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>{label}</p>
-              <p className="text-[clamp(15px,2vw,22px)] leading-snug" style={{ fontFamily: 'Instrument Serif, serif', color: c.cardText }}>{value || '—'}</p>
+              <p className="text-[clamp(18px,2vw,22px)] leading-snug" style={{ fontFamily: 'Instrument Serif, serif', color: c.cardText }}>{value || '—'}</p>
             </div>
           ))}
 
