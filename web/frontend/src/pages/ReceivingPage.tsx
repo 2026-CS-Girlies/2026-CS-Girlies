@@ -24,6 +24,7 @@ export default function ReceivingScreen({ thought, bg, isLight, onComplete }: { 
 
     return () => timers.forEach(clearTimeout)
   }, [onComplete])
+  
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden" style={bgStyle(bg)}>
