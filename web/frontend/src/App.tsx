@@ -54,6 +54,15 @@ export default function App() {
     }
   }, [bg])
 
+  useEffect(() => {
+    if (screen === 'receiving' && receivingFinished && conversationStart) {
+      setScreen('conversation')}
+    }, [
+      screen,
+      receivingFinished,
+      conversationStart,
+    ])
+
   const beginReflection = async (newThought: string) => {
     setThought(newThought)
 
@@ -123,20 +132,21 @@ export default function App() {
           />
         </>
       )}
-
+    
       {screen === 'receiving' && (
       <ReceivingScreen
         thought={thought}
         bg={bg}
         isLight={isLight}
-        onComplete={() => setScreen('conversation')}
+        onComplete={() => setReceivingFinished(true)}
       />
     )}
 
       {/* One Conversation Page */}
-      {screen === 'conversation' && (
+      {screen === 'conversation' && conversationStart && (
         <ConversationPage
           thought={thought}
+          initialConversation={conversationStart}
           bg={bg}
           isLight={isLight}
           onComplete={(id, summary) => {
