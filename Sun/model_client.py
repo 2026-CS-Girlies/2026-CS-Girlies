@@ -9,19 +9,38 @@ class ModelClient:
         self.timeout = timeout
 
     def chat(self, system_prompt, history):
-        result = self._request(model=config.CHAT_MODEL, system_prompt=system_prompt, history=history, response_format=config.CHAT_RESPONSE_SCHEMA)
+        result = self._request(model=config.CHAT_MODEL, system_prompt=system_prompt, history=history,
+                               response_format=config.CHAT_RESPONSE_SCHEMA)
 
         try:
             data = json.loads(result)
             return data["reply"], data["next_stage"], data["next_phase"]
-
         except json.JSONDecodeError:
             print("[ERROR] Invalid JSON response:")
             print(result)
             raise
-
         except KeyError as e:
             print(f"[ERROR] Missing field: {e}")
+            print(result)
+            raise
+
+    def judge_verdict(self, system_prompt, history):
+        result = self._request(model=config.CHAT_MODEL, system_prompt=system_prompt, history=history,
+                               response_format=config.VERDICT_RESPONSE_SCHEMA)
+
+        try:
+            data = json.loads(result)
+
+            resolved = data["resolution_status"] == "resolved"
+            rationale = data["rationale"]
+
+            return resolved, rationale
+        except json.JSONDecodeError:
+            print("[ERROR] Invalid verdict JSON response:")
+            print(result)
+            raise
+        except KeyError as e:
+            print(f"[ERROR] Missing verdict field: {e}")
             print(result)
             raise
 
@@ -54,7 +73,6 @@ class ModelClient:
             timeout=self.timeout
         )
 
-        print("\n[STATUS]", response.status_code)
         print("[RESPONSE]", response.text)
 
         response.raise_for_status()

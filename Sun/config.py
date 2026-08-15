@@ -26,18 +26,16 @@ CHAT_RESPONSE_SCHEMA = {
             "enum": [
                 "identification",
                 "restructuring",
-                "complete"
             ]
         },
         "next_phase": {
-            "type": ["string", "null"],
+            "type": "string",
             "enum": [
                 "thought_exploration",
                 "distortion_identification",
                 "defense",
                 "prosecution",
                 "verdict",
-                None
             ]
         }
     },
@@ -45,5 +43,22 @@ CHAT_RESPONSE_SCHEMA = {
         "reply",
         "next_stage",
         "next_phase"
+    ]
+}
+
+VERDICT_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "resolution_status": {
+            "type": "string",
+            "enum": ["resolved", "unresolved"]
+        },
+        "rationale": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "resolution_status",
+        "rationale"
     ]
 }

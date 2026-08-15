@@ -8,6 +8,7 @@ class CRHelper:
         self.phase = IdentificationPhase.THOUGHT_EXPLORATION
 
         self.history = []
+        self.last_message = None
 
         self.automatic_thought = None
         self.intermediate_belief = None
@@ -25,6 +26,7 @@ class CRHelper:
         self.phase = IdentificationPhase.THOUGHT_EXPLORATION
 
         self.history = []
+        self.last_message = None
 
         self.automatic_thought = None
         self.intermediate_belief = None
@@ -41,31 +43,75 @@ class CRHelper:
             "content": content
         })
 
-    """ # model decides next stage, phase
-        def advance_phase(self):
-        # Identification has a fixed progression
+    def validate_state(self, next_stage, next_phase):
+        valid_states = {
+            ("identification", "thought_exploration"),
+            ("identification", "distortion_identification"),
+            ("restructuring", "defense"),
+            ("restructuring", "prosecution"),
+            ("restructuring", "verdict"),
+        }
+
+        return (next_stage, next_phase) in valid_states
+
+    def validate_transition(self, next_stage, next_phase):
         if self.stage == CRStage.IDENTIFICATION:
             if self.phase == IdentificationPhase.THOUGHT_EXPLORATION:
-                self.phase = IdentificationPhase.DISTORTION_IDENTIFICATION
-
+                allowed = {
+                    (CRStage.IDENTIFICATION, IdentificationPhase.THOUGHT_EXPLORATION),
+                    (CRStage.IDENTIFICATION, IdentificationPhase.DISTORTION_IDENTIFICATION),
+                }
             elif self.phase == IdentificationPhase.DISTORTION_IDENTIFICATION:
-                self.stage = CRStage.RESTRUCTURING
-                self.phase = None
+                allowed = {
+                    (CRStage.IDENTIFICATION, IdentificationPhase.DISTORTION_IDENTIFICATION),
+                    (CRStage.RESTRUCTURING, RestructuringPhase.DEFENSE),
+                }
 
-    def change_phase(self, phase):
-        # Restructuring phases can move dynamically
-        if self.stage != CRStage.RESTRUCTURING:
-            raise ValueError("Phase can only be changed during restructuring.")
+        elif self.stage == CRStage.RESTRUCTURING:
+            if self.phase == RestructuringPhase.DEFENSE:
+                allowed = {
+                    (CRStage.RESTRUCTURING, RestructuringPhase.DEFENSE),
+                    (CRStage.RESTRUCTURING, RestructuringPhase.PROSECUTION),
+                }
+            elif self.phase == RestructuringPhase.PROSECUTION:
+                allowed = {
+                    (CRStage.RESTRUCTURING, RestructuringPhase.DEFENSE),
+                    (CRStage.RESTRUCTURING, RestructuringPhase.PROSECUTION),
+                    (CRStage.RESTRUCTURING, RestructuringPhase.VERDICT),
+                }
 
-        if phase not in {
-            RestructuringPhase.DEFENSE,
-            RestructuringPhase.PROSECUTION,
-            RestructuringPhase.VERDICT
-        }:
-            raise ValueError(f"Invalid restructuring phase: {phase}")
+            elif self.phase == RestructuringPhase.VERDICT:
+                return False
 
+        else:
+            return False
+
+        return (next_stage, next_phase) in allowed
+
+    def update_state(self, next_stage, next_phase):
+        if not self.validate_state(next_stage, next_phase):
+            print(
+                f"[WARNING] Invalid stage/phase combination ignored: "
+                f"{next_stage}/{next_phase}"
+            )
+            print(
+                f"[STATE KEPT] {self.stage}/{self.phase}"
+            )
+            return False
+
+        # convert only after validation
+        stage = CRStage(next_stage)
+
+        if stage == CRStage.IDENTIFICATION:
+            phase = IdentificationPhase(next_phase)
+
+        elif stage == CRStage.RESTRUCTURING:
+            phase = RestructuringPhase(next_phase)
+
+        self.stage = stage
         self.phase = phase
-    """
+
+        return True
 
     def loop_to_identification(self):
         self.stage = CRStage.IDENTIFICATION
@@ -76,25 +122,17 @@ class CRHelper:
             self.stage = CRStage.COMPLETE
             self.phase = None
 
+        print("[!CR PROCESS COMPLETE!]")
+        print(f"[history]\n {self.history}")
+
     def is_complete(self):
         return self.stage == CRStage.COMPLETE
 
-    def update_state(self, next_stage, next_phase):
-        stage = CRStage(next_stage)
-
-        if stage == CRStage.IDENTIFICATION:
-            phase = IdentificationPhase(next_phase)
-
-        elif stage == CRStage.RESTRUCTURING:
-            phase = RestructuringPhase(next_phase)
-
-        elif stage == CRStage.COMPLETE:
-            phase = None
-
-        self.stage = stage
-        self.phase = phase
-
     def chat(self, user_message):
+        if self.stage == CRStage.RESTRUCTURING and self.phase == RestructuringPhase.VERDICT:
+            self.last_message = user_message
+            return self.handle_verdict()
+
         self.add_message("user", user_message)
 
         system_prompt = get_chat_prompt(self.stage, self.phase)
@@ -111,3 +149,33 @@ class CRHelper:
 
         return reply
 
+    def handle_verdict(self):
+        system_prompt = get_chat_prompt(self.stage, self.phase)
+
+        verdict_history = self.history + [
+            {
+                "role": "user",
+                "content": self.last_message
+            }
+        ]
+
+        resolved, rationale = self.model_client.judge_verdict(system_prompt=system_prompt, history=verdict_history)
+
+        print(f"[verdict resolved] {resolved}")
+        print(f"[verdict rationale] {rationale}")
+
+        if resolved:
+            self.add_message("user", self.last_message)
+            self.last_message = None
+
+            self.complete()
+            return None
+
+        # unresolved -> continue prosecution
+        message = self.last_message
+        self.last_message = None
+
+        self.stage = CRStage.RESTRUCTURING
+        self.phase = RestructuringPhase.PROSECUTION
+
+        return self.chat(message)

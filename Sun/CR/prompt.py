@@ -4,26 +4,14 @@ COMMON_PROMPT = """
 You are a supportive Cognitive Restructuring assistant.
 Speak directly to the user. Ask at most one question. Do not diagnose,
 fabricate evidence, force positivity, or mention internal phases and fields.
-Follow only the current phase.
+Follow the instructions for the CURRENT phase only.
 
-The CR structure is:
-
-1. identification
-   - thought_exploration
-   - distortion_identification
-
-2. restructuring
-   - defense
-   - prosecution
-   - verdict
-
-3. complete
-   - next_phase must be null
+The CR structure consists of two stages: identification and restructuring. 
+The identification stage includes thought_exploration and distortion_identification, 
+while the restructuring stage includes defense, prosecution, and verdict.
    
 Decide the appropriate stage and phase for the NEXT interaction based on the conversation.
 The next phase may remain the same if more exploration is needed.
-
-Never return a phase that does not belong to the selected stage.
 
 Return:
 - reply: the response to the user for the current interaction
@@ -38,7 +26,7 @@ Do not begin restructuring the thought yet.
 """
 
 DISTORTION_IDENTIFICATION_PROMPT = """
-Explore deeper beliefs and identify possible cognitive distortions based on the conversation so far.
+Explore deeper and core beliefs and identify possible cognitive distortions based on the conversation so far.
 """
 
 DEFENSE_PROMPT = """
@@ -51,9 +39,21 @@ Guide the user to examine factual counter-evidence, exceptions, and alternative 
 """
 
 VERDICT_PROMPT = """
-Help the user form a balanced and realistic perspective based on the evidence discussed so far.
-Do not force agreement or positivity.
-Check whether the new perspective genuinely reflects the user's view.
+Assess whether the user's current cognitive distortion has been successfully restructured based on the conversation history.
+
+Mark it as "resolved" when:
+1. The user no longer treats the original negative belief as an unquestionable fact.
+2. The user can recognize factual counter-evidence or a reasonable alternative explanation.
+3. The user shows a more balanced perspective on the original situation.
+
+The user does not need to feel completely better, be fully confident, or prove that the new perspective applies to other situations.
+
+Mark it as "unresolved" only when the user still clearly endorses the original distorted belief
+or has not yet been able to consider meaningful counter-evidence or an alternative perspective.
+
+Evaluate only the current cognitive distortion.
+Do not introduce additional requirements.
+Do not generate a conversational response.
 """
 
 SUMMARY_PROMPT = """
@@ -78,7 +78,7 @@ def get_chat_prompt(stage, phase):
             phase_prompt = PROSECUTION_PROMPT
 
         elif phase == RestructuringPhase.VERDICT:
-            phase_prompt = VERDICT_PROMPT
+            return VERDICT_PROMPT
 
     else:
         raise ValueError(f"Unsupported stage/phase: {stage}, {phase}")
