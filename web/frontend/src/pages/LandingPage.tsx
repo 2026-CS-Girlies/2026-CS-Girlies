@@ -1,15 +1,15 @@
 import { useState, type KeyboardEvent } from 'react'
-import AnimatedHeadline from '@/components/landing/AnimatedHeadline'
-import CustomizePanel from '@/components/landing/CustomizePanel'
-import PrivacyBottomSheet from '@/components/landing/PrivacyBottomSheet'
-import ThemeButton from '@/components/landing/ThemeButton'
-import SendIcon from '@/components/common/SendIcon'
-import { PRIVACY_NOTE } from '@/data/privacy'
-import { bgStyle } from '@/theme/background'
-import { tk } from '@/theme/tokens'
-import type { BgConfig, SoundId } from '@/types/theme'
+import AnimatedHeadline from '../components/landing/AnimatedHeadline'
+import CustomizePanel from '../components/landing/CustomizePanel'
+import PrivacyBottomSheet from '../components/landing/PrivacyBottomSheet'
+import ThemeButton from '../components/landing/ThemeButton'
+import SendIcon from '../components/common/SendIcon'
+import { PRIVACY_NOTE } from '../data/privacy'
+import { bgStyle } from '../theme/background'
+import { tk } from '../theme/tokens'
+import type { BgConfig, SoundId, ThemeId } from '../types/theme'
 
-export default function LandingPage({ onBegin, bg, onBgChange, isLight, soundId, onSoundChange, onHowItWorks }: { onBegin: (t: string) => void; bg: BgConfig; onBgChange: (b: BgConfig) => void; isLight: boolean; soundId: SoundId; onSoundChange: (s: SoundId) => void; onHowItWorks: () => void }) {
+export default function LandingPage({ onBegin, bg, onBgChange, isLight, soundId, onSoundChange, onHowItWorks, activeThemeId, onThemeId }: { onBegin: (t: string) => void; bg: BgConfig; onBgChange: (b: BgConfig) => void; isLight: boolean; soundId: SoundId; onSoundChange: (s: SoundId) => void; onHowItWorks: () => void; activeThemeId: ThemeId | null; onThemeId: (id: ThemeId | null) => void }) {
   const [input, setInput] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
@@ -76,11 +76,28 @@ export default function LandingPage({ onBegin, bg, onBgChange, isLight, soundId,
 
       <ThemeButton
         isLight={isLight}
-        onTheme={(newBg, newSound) => { onBgChange(newBg); onSoundChange(newSound) }}
+        activeThemeId={activeThemeId}
+        onTheme={(newBg, newSound, id) => {
+          onBgChange(newBg)
+          onSoundChange(newSound)
+          onThemeId(id)
+        }}
         onCustomize={() => setPanelOpen(true)}
       />
 
-      {panelOpen && <CustomizePanel current={bg} onChange={onBgChange} onClose={() => setPanelOpen(false)} isLight={isLight} soundId={soundId} onSoundChange={onSoundChange} />}
+      {panelOpen && (
+        <CustomizePanel
+          current={bg}
+          onChange={newBg => {
+            onBgChange(newBg)
+            onThemeId(null)
+          }}
+          onClose={() => setPanelOpen(false)}
+          isLight={isLight}
+          soundId={soundId}
+          onSoundChange={onSoundChange}
+        />
+      )}
     </div>
   )
 }
