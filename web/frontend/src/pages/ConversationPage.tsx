@@ -33,7 +33,15 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   const menuRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const startedRef = useRef(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const c = tk(isLight)
+
+  // Focus input when the page loads and when loading completes
+  useEffect(() => {
+    if (!isLoading && !isComplete) {
+      inputRef.current?.focus()
+    }
+  }, [isLoading, isComplete])
 
   useEffect(() => {
     if (startedRef.current) return
@@ -208,6 +216,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
         <div className="px-4 md:px-8 pt-3 pb-2 flex-none" style={{ borderTop: `1px solid ${c.divider}` }}>
           <div className="flex items-center gap-3 rounded-2xl px-4 py-2.5 md:py-3" style={{ background: c.inputBg, border: `1px solid ${c.inputBorder}` }}>
             <input
+              ref={inputRef}
               className="flex-1 text-sm outline-none bg-transparent min-w-0"
               style={{ fontFamily: 'Inter, sans-serif', color: c.inputText }}
               placeholder={isComplete ? 'Ready for your reflection' : 'Write what comes to mind…'}
