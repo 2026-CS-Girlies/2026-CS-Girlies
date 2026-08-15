@@ -158,45 +158,47 @@ def start_conversation(request: StartConversationRequest):
 
 
 @app.post("/api/conversations/{conversation_id}/messages")
-def send_message(
+async def send_message(
     conversation_id: str,
     request: MessageRequest,
 ):
-    helper = conversations.get(conversation_id)
-
-    if helper is None:
+    if conversation_id not in conversations:
         raise HTTPException(
             status_code=404,
             detail="Conversation not found",
         )
 
-    if helper.is_complete():
-        raise HTTPException(
-            status_code=400,
-            detail="Conversation is already complete",
-        )
-
-    message = request.message.strip()
-
-    if not message:
-        raise HTTPException(
-            status_code=400,
-            detail="message cannot be empty",
-        )
+    helper = conversations[conversation_id]["helper"]
 
     try:
-        result = helper.chat(message)
-    except Exception as exc:
-        print(f"[MODEL ERROR] send_message: {exc}")
+        result = helper.chat(request.message)
+
+    except Exception as e:
+        print("[MODEL ERROR] send_message:", e)
+
         raise HTTPException(
             status_code=500,
-            detail="Model request failed",
-        ) from exc
+            detail=str(e),
+        )
 
-    print(f"[MESSAGE] {conversation_id}: {message}")
+    if helper.is_complete():
+        return {
+            "conversation_id": conversation_id,
+            "stage": "complete",
+            "phase": None,
+            "message": None,
 
-    return _build_response(
-        conversation_id=conversation_id,
-        helper=helper,
-        result=result,
-    )
+            # main result
+            "data": result,
+
+            "stage_complete": True,
+        }
+
+    return {
+        "conversation_id": conversation_id,
+        "stage": helper.stage.value,
+        "phase": helper.phase.value,
+        "message": result,
+        "data": None,
+        "stage_complete": False,
+    }

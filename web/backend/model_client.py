@@ -57,14 +57,14 @@ class ModelClient:
             data = json.loads(result)
 
             return {
-                "intermediate_belief": data["intermediate_belief"],
-                "core_belief": data["core_belief"],
-                "core_belief_inferred": data["core_belief_inferred"],
-                "balanced_thought": data["balanced_thought"],
-                "current_progress": data["current_progress"],
-                "next_steps": data["next_steps"],
+                "automatic_thought": data.get("automatic_thought", ""),
+                "intermediate_belief": data.get("intermediate_belief", ""),
+                "core_belief": data.get("core_belief", ""),
+                "balanced_thought": data.get("balanced_thought", ""),
+                "current_progress": data.get("current_progress", ""),
+                "next_steps": data.get("next_steps", []),
             }
-
+        
         except json.JSONDecodeError:
             print("[ERROR] Invalid summary JSON response:")
             print(result)
