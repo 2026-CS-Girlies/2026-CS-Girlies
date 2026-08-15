@@ -41,7 +41,8 @@ class CRHelper:
             "content": content
         })
 
-    def advance_phase(self):
+    """ # model decides next stage, phase
+        def advance_phase(self):
         # Identification has a fixed progression
         if self.stage == CRStage.IDENTIFICATION:
             if self.phase == IdentificationPhase.THOUGHT_EXPLORATION:
@@ -64,6 +65,7 @@ class CRHelper:
             raise ValueError(f"Invalid restructuring phase: {phase}")
 
         self.phase = phase
+    """
 
     def loop_to_identification(self):
         self.stage = CRStage.IDENTIFICATION
@@ -77,17 +79,35 @@ class CRHelper:
     def is_complete(self):
         return self.stage == CRStage.COMPLETE
 
+    def update_state(self, next_stage, next_phase):
+        stage = CRStage(next_stage)
+
+        if stage == CRStage.IDENTIFICATION:
+            phase = IdentificationPhase(next_phase)
+
+        elif stage == CRStage.RESTRUCTURING:
+            phase = RestructuringPhase(next_phase)
+
+        elif stage == CRStage.COMPLETE:
+            phase = None
+
+        self.stage = stage
+        self.phase = phase
+
     def chat(self, user_message):
         self.add_message("user", user_message)
 
         system_prompt = get_chat_prompt(self.stage, self.phase)
 
-        result = self.model_client.chat(
-            system_prompt=system_prompt,
-            history=self.history
-        )
+        reply, next_stage, next_phase = self.model_client.chat(system_prompt=system_prompt, history=self.history)
 
-        self.add_message("assistant", result)
+        self.add_message("assistant", reply)
+        print(f"[current stage] {self.stage}")
+        print(f"[current phase] {self.phase}")
+        print(f"[next stage] {next_stage}")
+        print(f"[next phase] {next_phase}")
 
-        return result
+        self.update_state(next_stage, next_phase)
+
+        return reply
 

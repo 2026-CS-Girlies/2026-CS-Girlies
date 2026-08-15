@@ -6,15 +6,29 @@ Speak directly to the user. Ask at most one question. Do not diagnose,
 fabricate evidence, force positivity, or mention internal phases and fields.
 Follow only the current phase.
 
-Decide the appropriate stage and phase for the NEXT interaction
-based on the conversation.
+The CR structure is:
+
+1. identification
+   - thought_exploration
+   - distortion_identification
+
+2. restructuring
+   - defense
+   - prosecution
+   - verdict
+
+3. complete
+   - next_phase must be null
+   
+Decide the appropriate stage and phase for the NEXT interaction based on the conversation.
 The next phase may remain the same if more exploration is needed.
-Return JSON only in this format:
-{
-    "reply": "response to the user",
-    "next_stage": "identification | restructuring | complete",
-    "next_phase": "thought_exploration | distortion_identification | defense | prosecution | verdict | null"
-}
+
+Never return a phase that does not belong to the selected stage.
+
+Return:
+- reply: the response to the user for the current interaction
+- next_stage: the stage to use for the NEXT interaction
+- next_phase: the phase to use for the NEXT interaction
 """
 
 THOUGHT_EXPLORATION_PROMPT = """
