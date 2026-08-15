@@ -13,6 +13,7 @@ export default function LandingPage({ onBegin, bg, onBgChange, isLight, soundId,
   const [input, setInput] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
+
   const c = tk(isLight)
 
   const submit = () => { const t = input.trim(); if (t) onBegin(t) }
