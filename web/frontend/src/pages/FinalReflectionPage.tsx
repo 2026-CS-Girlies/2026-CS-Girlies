@@ -4,18 +4,28 @@ import { tk } from '@/theme/tokens'
 import type { CTReviewData, FinalReflectionData } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
 
+type ReflectionFlow = 'two-step' | 'one-step'
+
 type Props = {
   ctReview: CTReviewData
   result: FinalReflectionData
   bg: BgConfig
   isLight: boolean
+  flow: ReflectionFlow
   onBack: () => void
   onRestart: () => void
 }
 
-export default function FinalReflectionPage({ ctReview, result, bg, isLight, onBack, onRestart }: Props) {
+export default function FinalReflectionPage({ ctReview, result, bg, isLight, flow, onBack, onRestart }: Props) {
   const c = tk(isLight)
+  // dynamic flow
+  const currentStep =
+    flow === 'one-step' ? '02' : '04'
 
+  const totalSteps =
+    flow === 'one-step' ? '02' : '04'
+
+  // file download function
   //TODO: Encrypt the reflection data and save it to a file for download
   const handleDownload = () => {
 
@@ -85,9 +95,9 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, onB
 
       <div className="relative z-10 flex items-center justify-between pb-4">
         <div className="flex items-baseline gap-1" style={{ fontFamily: 'Instrument Serif, serif' }}>
-          <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>04</span>
+          <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>{currentStep}</span>
           <span className="text-[18px] md:text-[24px]" style={{ color: c.textFaint }}> / </span>
-          <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>04</span>
+          <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>{totalSteps}</span>
         </div>
         <button onClick={onRestart} className="hidden md:flex gap-2 text-sm hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>
           <RotateCcw size={18} /> START A NEW REFLECTION
@@ -96,7 +106,7 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, onB
 
       <div className="relative z-10 w-full max-w-[900px] mx-auto flex flex-col items-center gap-6 md:gap-8 pb-8">
         <div className="text-center">
-          <h1 className="text-[clamp(24px,3.5vw,44px)] leading-tight" style={{ fontFamily: 'Instrument Serif, serif', color: c.textOnCard }}>A Clearer View</h1>
+          <h1 className="text-[clamp(24px,3.5vw,44px)] leading-tight" style={{ fontFamily: 'Libre Baskerville, serif', color: c.textOnCard }}>A Clearer View</h1>
           <p className="text-xs md:text-sm mt-2 max-w-xl mx-auto" style={{ fontFamily: 'Inter, sans-serif', color: c.textMuted }}>You examined the thought from more than one side. Here’s the perspective you arrived at.</p>
         </div>
 
@@ -104,7 +114,7 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, onB
           {items.map(([label, value]) => (
             <div key={label} className="text-center">
               <p className="text-sm mb-2" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>{label}</p>
-              <p className="text-[clamp(18px,2vw,22px)] leading-snug" style={{ fontFamily: 'Instrument Serif, serif', color: c.cardText }}>{value || '—'}</p>
+              <p className="text-[clamp(18px,2vw,22px)] leading-snug" style={{ fontFamily: 'Libre Baskerville, serif', color: c.cardText }}>{value || '—'}</p>
             </div>
           ))}
 

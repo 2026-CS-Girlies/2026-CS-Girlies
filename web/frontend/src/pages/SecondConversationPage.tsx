@@ -130,7 +130,7 @@ export default function SecondConversationPage({ conversationId, reviewData, bg,
           Examine the <em>Evidence</em>
         </h1>
         <p className="text-xs md:text-sm text-center mt-2 max-w-lg mx-auto" style={{ fontFamily: 'Inter, sans-serif', color: c.textMuted }}>
-          Now let’s test the thought—not to prove it wrong, but to see whether it tells the whole story.
+          Now let’s test the thought. Not to prove it wrong, but to see whether it tells the whole story.
         </p>
       </div>
 

@@ -64,7 +64,7 @@ export default function ReviewPage({ conversationId, data, bg, isLight, onChange
 
       <div className="relative z-10 w-full max-w-[900px] flex flex-col items-center gap-6 md:gap-8">
         <div className="text-center">
-          <h1 className="text-[clamp(24px,3.5vw,44px)] leading-tight" style={{ fontFamily: 'Instrument Serif, serif', color: c.textOnCard }}>Does This Feel Accurate?</h1>
+          <h1 className="text-[clamp(24px,3.5vw,44px)] leading-tight" style={{ fontFamily: 'Libre Baskerville, serif', color: c.textOnCard }}>Does This Feel Accurate?</h1>
           <p className="text-xs md:text-sm mt-2 max-w-lg mx-auto" style={{ fontFamily: 'Inter, sans-serif', color: c.textMuted }}>Here’s what I understood from our conversation. You can change anything that doesn’t feel right.</p>
         </div>
 

@@ -8,6 +8,8 @@ import ReviewPage from './pages/ReviewPage'
 import SecondConversationPage from './pages/SecondConversationPage'
 import FinalReflectionPage from './pages/FinalReflectionPage'
 import HowItWorksPage from './pages/HowItWorksPage'
+import ConversationPage from './pages/ConversationPage'
+
 
 import { hexLuminance, measureImageBrightness } from './theme/background'
 import type { CTReviewData, FinalReflectionData } from './types/conversation'
@@ -29,6 +31,10 @@ export default function App() {
   const [soundId, setSoundId] = useState<SoundId>('none')
   const [activeThemeId, setActiveThemeId] = useState<ThemeId | null>('none')
 
+  // Flow
+  const [reflectionFlow, setReflectionFlow] = useState<'two-step' | 'one-step'>('one-step')
+
+  // theme and sound effects
   useAmbientSound(soundId)
 
   useEffect(() => {
@@ -73,13 +79,32 @@ export default function App() {
             onSoundChange={setSoundId}
             onBegin={value => {
               setThought(value)
-              setScreen('firstConversation')
+              // setScreen('firstConversation')
+              setScreen('conversation')
             }}
             onHowItWorks={() => setScreen('howItWorks')}
             activeThemeId={activeThemeId}
             onThemeId={setActiveThemeId}
           />
         </>
+      )}
+
+      {/* One Conversation Page */}
+      {screen === 'conversation' && (
+        <ConversationPage
+          thought={thought}
+          bg={bg}
+          isLight={isLight}
+          onComplete={(id, ctData, result) => {
+            setConversationId(id)
+            setCtReview(ctData)
+            setFinalReflection(result)
+            setReflectionFlow('one-step')
+            setScreen('finalReflection')
+          }}
+          onBack={() => setScreen('landing')}
+          onRestart={restart}
+        />
       )}
 
       {/* 01 / 04 — CT guided identification */}
@@ -124,6 +149,7 @@ export default function App() {
           onComplete={result => {
             setFinalReflection(result)
             setScreen('finalReflection')
+            setReflectionFlow('two-step')
           }}
           onBack={() => setScreen('review')}
           onRestart={restart}
@@ -137,7 +163,14 @@ export default function App() {
           result={finalReflection}
           bg={bg}
           isLight={isLight}
-          onBack={() => setScreen('secondConversation')}
+          flow={reflectionFlow}
+          onBack={() => {
+            if (reflectionFlow === 'one-step') {
+              setScreen('conversation')
+            } else {
+              setScreen('secondConversation')
+            }
+          }}
           onRestart={restart}
         />
       )}
