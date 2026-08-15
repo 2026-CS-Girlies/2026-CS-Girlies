@@ -16,11 +16,65 @@ type Props = {
 export default function FinalReflectionPage({ ctReview, result, bg, isLight, onBack, onRestart }: Props) {
   const c = tk(isLight)
 
+  //TODO: Encrypt the reflection data and save it to a file for download
+  const handleDownload = () => {
+
+    const now = new Date()
+
+    const formattedDate = now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+
+    const fileDate = now.toISOString().split('T')[0]
+     
+    const content = `
+      Still True — Final Reflection
+
+      Date
+      ${formattedDate}
+
+      The Situation
+      ${result.situation || ctReview.situation}
+
+      The Original Thought
+      ${result.original_thought || ctReview.automatic_thought}
+
+      Why It Felt True
+      ${result.why_it_felt_true}
+
+      What It May Have Left Out
+      ${result.what_it_may_have_left_out}
+
+      A More Balanced Thought
+      ${result.balanced_thought}
+
+      One Small Next Step
+      ${result.next_step}
+      `.trim()
+
+    const blob = new Blob([content], {
+      type: 'text/plain;charset=utf-8',
+    })
+
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'still-true-reflection.txt'
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    URL.revokeObjectURL(url)
+  }
+
+
   const items = [
     ['The Situation', result.situation || ctReview.situation],
     ['The Original Thought', result.original_thought || ctReview.automatic_thought],
-    ['Why It Felt True', result.why_it_felt_true],
-    ['What It May Have Left Out', result.what_it_may_have_left_out],
     ['A More Balanced Thought', result.balanced_thought],
     ['One Small Next Step', result.next_step],
   ] as const
@@ -59,7 +113,7 @@ export default function FinalReflectionPage({ ctReview, result, bg, isLight, onB
 
         <div className="flex flex-col sm:flex-row gap-3">
           <button onClick={onBack} className="text-sm font-medium px-6 py-2.5 rounded-lg" style={{ fontFamily: 'Inter, sans-serif', background: '#fff', color: '#111', border: '1px solid rgba(0,0,0,0.12)' }}>← Back</button>
-          <button onClick={onRestart} className="text-sm font-medium px-6 py-2.5 rounded-lg" style={{ fontFamily: 'Inter, sans-serif', background: '#111', color: '#fff' }}>Start a New Reflection</button>
+          <button onClick={handleDownload} className="text-sm font-medium px-6 py-2.5 rounded-lg" style={{ fontFamily: 'Inter, sans-serif', background: '#111', color: '#fff' }}>Download Reflection</button>
         </div>
       </div>
     </div>
