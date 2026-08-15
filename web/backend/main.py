@@ -168,10 +168,41 @@ async def send_message(
             detail="Conversation not found",
         )
 
-    helper = conversations[conversation_id]["helper"]
+
+    if request.message == "__test__":
+        return {
+            "conversation_id": conversation_id,
+            "stage": "complete",
+            "phase": None,
+            "message": None,
+            "stage_complete": True,
+            "data": {
+                "automatic_thought": "I only succeeded because I used GPT.",
+                "intermediate_belief": "If I need help, I am not capable.",
+                "core_belief": "I am not capable on my own.",
+                "core_belief_inferred": True,
+                "balanced_thought": (
+                    "Using GPT does not erase my own ideas, "
+                    "judgment, or contribution."
+                ),
+                "current_progress": (
+                    "I can see that using a tool and being capable "
+                    "are not mutually exclusive."
+                ),
+                "next_steps": [
+                    "Write down one part of the project that came from your own judgment.",
+                    "Notice one recent problem you solved without relying entirely on external help.",
+                    "Use GPT as support while checking that you understand the final result.",
+                ],
+            },
+        }
+
+    helper = conversations[conversation_id]
 
     try:
         result = helper.chat(request.message)
+        print("[FASTAPI RESULT]", result)
+        print("[IS COMPLETE]", helper.is_complete())
 
     except Exception as e:
         print("[MODEL ERROR] send_message:", e)
