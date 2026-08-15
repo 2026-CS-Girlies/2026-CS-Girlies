@@ -8,6 +8,8 @@ import ReviewPage from './pages/ReviewPage'
 import SecondConversationPage from './pages/SecondConversationPage'
 import FinalReflectionPage from './pages/FinalReflectionPage'
 import HowItWorksPage from './pages/HowItWorksPage'
+import ConversationPage from './pages/ConversationPage'
+
 
 import { hexLuminance, measureImageBrightness } from './theme/background'
 import type { CTReviewData, FinalReflectionData } from './types/conversation'
@@ -73,13 +75,31 @@ export default function App() {
             onSoundChange={setSoundId}
             onBegin={value => {
               setThought(value)
-              setScreen('firstConversation')
+              // setScreen('firstConversation')
+              setScreen('conversation')
             }}
             onHowItWorks={() => setScreen('howItWorks')}
             activeThemeId={activeThemeId}
             onThemeId={setActiveThemeId}
           />
         </>
+      )}
+
+      {/* One Conversation Page */}
+      {screen === 'conversation' && (
+        <ConversationPage
+          thought={thought}
+          bg={bg}
+          isLight={isLight}
+          onComplete={(id, ctData, result) => {
+            setConversationId(id)
+            setCtReview(ctData)
+            setFinalReflection(result)
+            setScreen('finalReflection')
+          }}
+          onBack={() => setScreen('landing')}
+          onRestart={restart}
+        />
       )}
 
       {/* 01 / 04 — CT guided identification */}
