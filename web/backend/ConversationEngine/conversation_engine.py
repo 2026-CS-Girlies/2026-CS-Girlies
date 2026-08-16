@@ -44,6 +44,9 @@ class ConversationEngine:
         if phase == "working_belief":
             return self._handle_working_belief_phase(user_message)
 
+        if phase == "evidence_form":
+            return self._handle_evidence_form_phase(user_message)
+
         if phase == "evidence_review":
             return self._handle_evidence_review_phase(user_message)
 
@@ -69,7 +72,7 @@ class ConversationEngine:
 
         if result.belief_clear:
             self.state["phase"] = "belief_confirmation"
-            
+
         print("[WORKING BELIEF]", self.state.get("working_belief"))
         print("[CONFIRMED]", self.state.get("working_belief_confirmed"))
         print("[PHASE]", self.state["phase"])
@@ -80,6 +83,35 @@ class ConversationEngine:
         self.state["reply"] = result.message
 
         return result.message
+
+
+    def _handle_evidence_form_phase(self, user_message):
+        # No LLM call here, just store the evidence and ask for more if needed
+
+        evidence = user_message.strip()
+
+        if not evidence:
+            raise ValueError("Evidence must be provided")
+
+        self.state["evidence_for"].append(evidence)
+        evidence_count = len(self.state["evidence_for"])
+
+        if evidence_count == 1:
+            assistant_message = (
+                "That can be one piece of it. "
+                "Is there anything else you'd want to include?"
+                )
+        else:
+            assistant_message = ("Got it. Anything else you'd like to include?")
+
+        self.state["reply"] = assistant_message
+
+        print("[EVIDENCE ADDED]", evidence)
+        print("[EVIDENCE COUNT]", evidence_count)
+        print("[EVIDENCE FOR]", self.state["evidence_for"])
+        print("[PHASE]", self.state["phase"])
+
+        return assistant_message
 
 
     def submit_evidence(self, evidence):
