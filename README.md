@@ -32,6 +32,9 @@ By separating these roles, **Crispers focuses on the Cognitive Restructuring dia
 
 
 ## How It Works
+Check out our [demo video](https://www.canva.com/design/DAHSfcZb87A/Ga0yMbs6HM4DfKwlQ6FIVw/watch ).
+
+[Workflow]<br>
 ![image.png](./Sun/still_true_how_works.png)
 
 ## Features
