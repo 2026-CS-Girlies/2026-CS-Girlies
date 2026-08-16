@@ -42,8 +42,8 @@ export default function FinalReflectionPage({ conversationId, bg, isLight, onBac
         setSummaryError('')
 
         const response = await getConversationSummary(conversationId)
-        console.log('[QWEN FINAL SUMMARY]', response.summary)
-        setSummary(response.summary)
+        console.log('[QWEN FINAL SUMMARY]', response.data)
+        setSummary(response.data)
       } catch (err) {
         console.error('[SUMMARY ERROR]', err)
         setSummaryError(err instanceof Error ? err.message : 'Could not generate summary.')
