@@ -1,4 +1,6 @@
 import type {
+  BeliefConfirmationRequest,
+  BeliefConfirmationResponse,
   ConversationMessageRequest,
   CTConversationResponse,
   CTReviewData,
@@ -84,5 +86,23 @@ export function sendConversationMessage(conversationId: string, message: string)
       method: 'POST',
       body: JSON.stringify(body),
     }
+  )
+}
+
+
+export function confirmBelief(
+  conversationId: string,
+  confirmed: boolean,
+): Promise<BeliefConfirmationResponse> {
+  const body: BeliefConfirmationRequest = {
+    confirmed,
+  }
+
+  return request<BeliefConfirmationResponse>(
+    `/api/conversations/${conversationId}/belief-confirmation`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
   )
 }

@@ -58,18 +58,21 @@ class ConversationEngine:
         history = self.state["working_belief_messages"]
         prompt_input = {"history": history, "user_message": user_message}
 
-
         # 1. Build prompt messages
         messages = (working_belief_prompt.invoke(prompt_input).to_messages()) #changed to messeage list form ChatPromptValue object
         # 2. Qwen sturctured output
         structured_llm = (working_belief_llm.with_structured_output(WorkingBeliefExtraction))
         result = structured_llm.invoke(messages)
-        
+
         if result.working_belief is not None:
             self.state["working_belief"] = result.working_belief
 
-        if result.belief_clear and result.user_confirmed:
-            self.state["phase"] = "evidence_form"
+        if result.belief_clear:
+            self.state["phase"] = "belief_confirmation"
+            
+        print("[WORKING BELIEF]", self.state.get("working_belief"))
+        print("[CONFIRMED]", self.state.get("working_belief_confirmed"))
+        print("[PHASE]", self.state["phase"])
 
         history.append(HumanMessage(content=user_message))
         history.append(AIMessage(content=result.message))

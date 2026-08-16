@@ -92,9 +92,32 @@ export type ModelSummaryData = {
 
 export type OneStepConversationResponse = {
   conversation_id: string
-  stage: string
-  phase: string | null
+  phase: ConversationPhase
   message: string | null
-  data: ModelSummaryData | null
+  working_belief?: string | null
+  balanced_thought?: string | null
+  data?: ModelSummaryData | null
   stage_complete: boolean
+}
+
+
+export type ConversationPhase =
+  | 'working_belief'
+  | 'belief_confirmation'
+  | 'evidence_form'
+  | 'evidence_review'
+  | 'verdict'
+  | 'verdict_confirmation'
+  | 'complete'
+
+  
+export type BeliefConfirmationRequest = {
+  confirmed: boolean
+}
+
+export type BeliefConfirmationResponse = {
+  conversation_id: string
+  phase: ConversationPhase
+  working_belief: string | null
+  confirmed: boolean
 }
