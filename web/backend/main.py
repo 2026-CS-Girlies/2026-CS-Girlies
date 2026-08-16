@@ -137,79 +137,43 @@ def start_conversation(request: StartConversationRequest):
 
 
 @app.post("/api/conversations/{conversation_id}/messages")
-async def send_message(conversation_id: str, request: MessageRequest,):
-
+async def send_message(
+    conversation_id: str,
+    request: MessageRequest,
+):
     engine = conversations.get(conversation_id)
 
-    if engine is None: 
+    if engine is None:
         raise HTTPException(
             status_code=404,
             detail="Conversation not found",
-        )
-
-    if engine.state["phase"] == "evidence_form":
-        # Evidence form phase expects a list of evidence items.
-        raise HTTPException(
-            status_code=400,
-            detail="Evidence form phase expects a list of evidence items. Use the /evidence endpoint.",
         )
 
     if engine.state["phase"] == "complete":
         raise HTTPException(
             status_code=400,
-            detail="Conversation is already complete. No further messages are accepted.",
+            detail="Conversation is already complete.",
         )
-    
-
-    if conversation_id not in conversations:
-        raise HTTPException(
-            status_code=404,
-            detail="Conversation not found",
-        )
-
-
-    # if request.message == "__test__":
-    #     return {
-    #         "conversation_id": conversation_id,
-    #         "stage": "complete",
-    #         "phase": None,
-    #         "message": None,
-    #         "stage_complete": True,
-    #         "data": {
-    #             "automatic_thought": "I only succeeded because I used GPT.",
-    #             "intermediate_belief": "If I need help, I am not capable.",
-    #             "core_belief": "I am not capable on my own.",
-    #             "core_belief_inferred": True,
-    #             "balanced_thought": (
-    #                 "Using GPT does not erase my own ideas, "
-    #                 "judgment, or contribution."
-    #             ),
-    #             "current_progress": (
-    #                 "I can see that using a tool and being capable "
-    #                 "are not mutually exclusive."
-    #             ),
-    #             "next_steps": [
-    #                 "Write down one part of the project that came from your own judgment.",
-    #                 "Notice one recent problem you solved without relying entirely on external help.",
-    #                 "Use GPT as support while checking that you understand the final result.",
-    #             ],
-    #         },
-    #     }
 
     try:
         result = engine.chat(request.message)
+
         print("[FASTAPI RESULT]", result)
         print("[PHASE]", engine.state["phase"])
 
-    except Exception as e:
-        print("[MODEL ERROR] send_message:", e)
+    except Exception as exc:
+        print("[MODEL ERROR] send_message:", exc)
 
         raise HTTPException(
             status_code=500,
-            detail=str(e),
-        )
+            detail=str(exc),
+        ) from exc
 
-    return _build_response(conversation_id=conversation_id, engine=engine, message=result)
+    return _build_response(
+        conversation_id=conversation_id,
+        engine=engine,
+        message=result,
+    )
 
 
 @app.post("/api/conversations/{conversation_id}/belief-confirmation")
@@ -232,9 +196,15 @@ async def confirm_belief(conversation_id: str, request: BeliefConfirmationReques
         engine.state["working_belief_confirmed"] = True
         engine.state["phase"] = "evidence_form"
 
+        message = (
+            "Now let’s look at what makes this thought feel true to you. "
+            "Can you share one specific experience, example, or reason that supports it?"
+        )
+
     else:
         engine.state["working_belief_confirmed"] = False
         engine.state["phase"] = "working_belief"
+        message = None
 
     print("[BELIEF CONFIRMED]", request.confirmed)
     print("[PHASE]", engine.state["phase"])
@@ -242,5 +212,36 @@ async def confirm_belief(conversation_id: str, request: BeliefConfirmationReques
     return _build_response(
         conversation_id=conversation_id,
         engine=engine,
-        message=None,
+        message=message,
+    )
+
+
+@app.post("/api/conversations/{conversation_id}/evidence/complete")
+async def complete_evidence_collection(
+    conversation_id: str,
+):
+    engine = conversations.get(conversation_id)
+
+    if engine is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
+    try:
+        message = engine.finish_evidence_collection()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    print("[EVIDENCE COLLECTION COMPLETE]")
+    print("[EVIDENCE FOR]", engine.state["evidence_for"])
+    print("[PHASE]", engine.state["phase"])
+
+    return _build_response(
+        conversation_id=conversation_id,
+        engine=engine,
+        message=message,
     )

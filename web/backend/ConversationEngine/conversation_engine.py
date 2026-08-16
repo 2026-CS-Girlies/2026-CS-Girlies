@@ -67,22 +67,31 @@ class ConversationEngine:
         structured_llm = (working_belief_llm.with_structured_output(WorkingBeliefExtraction))
         result = structured_llm.invoke(messages)
 
+        print("[QWEN RESULT]", result)
+
         if result.working_belief is not None:
             self.state["working_belief"] = result.working_belief
 
         if result.belief_clear:
             self.state["phase"] = "belief_confirmation"
 
+        assistant_message = (result.message or "").strip()
+        if not result.belief_clear and not assistant_message:
+                    assistant_message = (
+                        "What thought or feeling would you like to look at?"
+                    )
+
+        history.append(HumanMessage(content=user_message))
+        history.append(AIMessage(content=assistant_message))
+
+        self.state["reply"] = assistant_message
+
         print("[WORKING BELIEF]", self.state.get("working_belief"))
         print("[CONFIRMED]", self.state.get("working_belief_confirmed"))
         print("[PHASE]", self.state["phase"])
+        print("[ASSISTANT MESSAGE]", assistant_message)
 
-        history.append(HumanMessage(content=user_message))
-        history.append(AIMessage(content=result.message))
-
-        self.state["reply"] = result.message
-
-        return result.message
+        return assistant_message
 
 
     def _handle_evidence_form_phase(self, user_message):
@@ -113,20 +122,52 @@ class ConversationEngine:
 
         return assistant_message
 
-
-    def submit_evidence(self, evidence):
+    def finish_evidence_collection(self) -> str:
         if self.state["phase"] != "evidence_form":
             raise ValueError("Not in evidence form phase")
 
-        cleaned = [item.strip() for item in evidence if item.strip()]
+        if not self.state["evidence_for"]:
+            raise ValueError(
+                "At least one piece of evidence must be provided"
+            )
 
-        if not cleaned:
-            raise ValueError("At lease one piece of evidence must be provided")
-
-        self.state["evidence_for"] = cleaned
         self.state["evidence_index"] = 0
         self.state["evidence_review_messages"] = []
         self.state["phase"] = "evidence_review"
+
+        current_evidence = self._current_evidence()
+
+        assistant_message = (
+            f'Let’s take a closer look at the first one:\n\n'
+            f'“{current_evidence}”\n\n'
+            f'What about this experience makes '
+            f'“{self.state["working_belief"]}” feel true?'
+        )
+
+        self.state["evidence_review_messages"].append(
+            AIMessage(content=assistant_message)
+        )
+
+        self.state["reply"] = assistant_message
+
+        return assistant_message
+
+
+
+
+    # def submit_evidence(self, evidence):
+    #     if self.state["phase"] != "evidence_form":
+    #         raise ValueError("Not in evidence form phase")
+
+    #     cleaned = [item.strip() for item in evidence if item.strip()]
+
+    #     if not cleaned:
+    #         raise ValueError("At lease one piece of evidence must be provided")
+
+    #     self.state["evidence_for"] = cleaned
+    #     self.state["evidence_index"] = 0
+    #     self.state["evidence_review_messages"] = []
+    #     self.state["phase"] = "evidence_review"
 
 
     def _current_evidence(self):
@@ -182,6 +223,20 @@ class ConversationEngine:
             # all evidence reviewed
             if self.state["evidence_index"] >= len(self.state["evidence_for"]):
                 self.state["phase"] = "verdict"
+
+                assistant_message = (
+                    "You've looked at the evidence more closely. "
+                    "Now, considering what it supports and what it may leave out, "
+                    "what would be a more balanced way to describe this thought?"
+                )
+
+                self.state["verdict_messages"] = [
+                    AIMessage(content=assistant_message)
+                ]
+
+                self.state["reply"] = assistant_message
+
+                return assistant_message
 
         else:
             # Current evidence still needs more discussion
