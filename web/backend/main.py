@@ -245,3 +245,32 @@ async def complete_evidence_collection(
         engine=engine,
         message=message,
     )
+
+
+@app.get("/api/conversations/{conversation_id}/summary")
+async def get_conversation_summary(
+    conversation_id: str,
+):
+    engine = conversations.get(conversation_id)
+
+    if engine is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
+    try:
+        summary = engine.generate_summary()
+    except Exception as exc:
+        print("[SUMMARY ERROR]", exc)
+        raise HTTPException(
+            status_code=500,
+            detail="Could not generate summary",
+        ) from exc
+
+    print("[SUMMARY RESULT]", summary)
+
+    return {
+        "conversation_id": conversation_id,
+        "summary": summary,
+    }

@@ -153,23 +153,6 @@ class ConversationEngine:
         return assistant_message
 
 
-
-
-    # def submit_evidence(self, evidence):
-    #     if self.state["phase"] != "evidence_form":
-    #         raise ValueError("Not in evidence form phase")
-
-    #     cleaned = [item.strip() for item in evidence if item.strip()]
-
-    #     if not cleaned:
-    #         raise ValueError("At lease one piece of evidence must be provided")
-
-    #     self.state["evidence_for"] = cleaned
-    #     self.state["evidence_index"] = 0
-    #     self.state["evidence_review_messages"] = []
-    #     self.state["phase"] = "evidence_review"
-
-
     def _current_evidence(self):
         evidence = self.state["evidence_for"]
         index = self.state["evidence_index"]
@@ -280,4 +263,30 @@ class ConversationEngine:
 
         return assistant_message
 
+    def generate_summary(self) -> str:
+        prompt = f"""
+    Summarize this reflection clearly and concisely.
 
+    Working belief:
+    {self.state.get("working_belief")}
+
+    Evidence:
+    {self.state.get("evidence_for", [])}
+
+    Evidence reviews:
+    {self.state.get("evidence_reviews", [])}
+
+    Balanced thought:
+    {self.state.get("balanced_thought")}
+
+    Return a concise reflection summary with:
+
+    - Original thought
+    - What made it feel true
+    - What changed when looking closer
+    - Balanced thought
+    """
+
+        response = extractor_llm.invoke(prompt)
+
+        return response.content
