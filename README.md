@@ -1,5 +1,6 @@
 # Still True
 *An AI-guided Cognitive Restructuring tool that helps users examine whether negative thoughts still hold up against the evidence.*
+### [Demo Video]([https://www.canva.com/design/DAHSfcZb87A/Ga0yMbs6HM4DfKwlQ6FIVw/watch ](https://www.youtube.com/watch?v=K7SY0SLkqqo))
 
 ## Inspiration & Overview
 
@@ -32,8 +33,6 @@ By separating these roles, **Crispers focuses on the Cognitive Restructuring dia
 
 
 ## How It Works
-Check out our [demo video](https://www.canva.com/design/DAHSfcZb87A/Ga0yMbs6HM4DfKwlQ6FIVw/watch ).
-
 [Workflow]<br>
 ![image.png](./Sun/still_true_how_works.png)
 
