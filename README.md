@@ -1,6 +1,7 @@
 # Still True
 *An AI-guided Cognitive Restructuring tool that helps users examine whether negative thoughts still hold up against the evidence.*
-### [Demo Video]([https://www.canva.com/design/DAHSfcZb87A/Ga0yMbs6HM4DfKwlQ6FIVw/watch ](https://www.youtube.com/watch?v=K7SY0SLkqqo))
+
+## [![Watch the Demo](https://img.youtube.com/vi/K7SY0SLkqqo/maxresdefault.jpg)](https://www.youtube.com/watch?v=K7SY0SLkqqo)
 
 ## Inspiration & Overview
 
