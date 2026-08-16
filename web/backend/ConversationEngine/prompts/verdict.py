@@ -1,74 +1,43 @@
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    MessagesPlaceholder,
-)
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from .common import (
-    COMMON_SYSTEM,
-    EXTRACTION_COMMON,
-)
+from .common import COMMON_SYSTEM, EXTRACTION_COMMON
 
 
 VERDICT_SYSTEM = """
-Your task is to help the user form a more accurate and balanced view of the
-working belief after reviewing the evidence.
+You are helping the user form a balanced view after reviewing the evidence.
 
-Use the evidence reviews as the basis for the conversation.
+GOAL
 
-The goal is NOT to replace a negative thought with a positive thought.
+Help the user express a balanced thought that:
+- acknowledges what actually happened
+- does not overgeneralize beyond the evidence
+- includes relevant information discovered during review
+- is believable to the user
+- is not forced positive thinking
 
-Instead, help the user arrive at a thought that is:
+Whenever possible, let the user write the balanced thought in their own words.
 
-- more precise,
-- appropriately cautious,
-- consistent with the evidence,
-- less absolute when the evidence does not support an absolute conclusion,
-- still respectful of concerns that remain genuinely supported.
+If their thought is already balanced, reflect it briefly and ask whether it fits.
 
-Preserve anything from the original working belief that remains supported.
+If they are unsure, offer a tentative version and ask them to revise it.
 
-Do not simply reverse the belief.
+Do not introduce new evidence or advice.
+Ask at most one main question at a time.
 
-For example:
+CURRENT STATE
 
-Bad:
-"I am definitely capable and never need help."
+Original working belief:
+{working_belief}
 
-Better:
-"Needing help with some parts of the work does not necessarily mean I am
-incapable overall."
-
-When enough evidence has been reviewed, propose ONE concise balanced thought.
-
-Then ask whether that thought feels:
-
-- accurate,
-- believable,
-- and close enough to the user's actual experience.
-
-If the user says the proposed thought is too positive, too strong,
-too weak, inaccurate, or incomplete, revise it.
-
-Do not defend your wording.
-
-The user's judgment determines the final balanced thought.
+Evidence reviews:
+{evidence_reviews}
 """.strip()
 
 
 verdict_prompt = ChatPromptTemplate.from_messages([
     ("system", COMMON_SYSTEM),
     ("system", VERDICT_SYSTEM),
-
-    ("system", """
-Original working belief:
-{working_belief}
-
-Evidence reviews:
-{evidence_reviews}
-""".strip()),
-
     MessagesPlaceholder("history"),
-
     ("human", "{user_message}"),
 ])
 
@@ -80,12 +49,11 @@ balanced_thought:
 Store the balanced thought that is currently being considered.
 
 A balanced thought may come from:
-- a thought proposed by the assistant and clearly accepted by the user,
-- a revision proposed by the user,
-- wording collaboratively refined during the conversation.
+- a thought proposed by the assistant and clearly accepted by the user
+- a revision proposed by the user
+- wording collaboratively refined during the conversation
 
 Prefer the user's final wording when available.
-
 Do not create a new balanced thought that was never discussed.
 
 verdict_confirmed:
@@ -102,11 +70,11 @@ Examples of clear confirmation:
 Interpret short answers using the immediately preceding conversation.
 
 Set verdict_confirmed=false when the user:
-- rejects the thought,
-- wants to revise it,
-- says it is too positive,
-- says it is inaccurate,
-- expresses meaningful uncertainty.
+- rejects the thought
+- wants to revise it
+- says it is too positive
+- says it is inaccurate
+- expresses meaningful uncertainty
 
 Do not interpret agreement with an unrelated statement as confirmation of
 the balanced thought.
@@ -116,7 +84,6 @@ the balanced thought.
 verdict_extraction_prompt = ChatPromptTemplate.from_messages([
     ("system", EXTRACTION_COMMON),
     ("system", VERDICT_EXTRACTION_SYSTEM),
-
     ("system", """
 Original working belief:
 {working_belief}
@@ -124,9 +91,7 @@ Original working belief:
 Evidence reviews:
 {evidence_reviews}
 """.strip()),
-
     MessagesPlaceholder("history"),
-
     ("human", """
 Latest user message:
 {user_message}

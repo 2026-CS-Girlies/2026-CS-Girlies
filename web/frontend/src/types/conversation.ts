@@ -6,14 +6,6 @@ export type ConversationMessageRequest = {
   message: string
 }
 
-export type ConversationPhase =
-  | 'working_belief'
-  | 'belief_confirmation'
-  | 'evidence_form'
-  | 'evidence_review'
-  | 'verdict'
-  | 'complete'
-
 export type ConversationStateData = {
   working_belief: string | null
   evidence_for: string[]
@@ -24,13 +16,6 @@ export type ConversationStateData = {
     alternative_explanation: string | null
   }>
   balanced_thought: string | null
-}
-
-export type ModelSummaryData = {
-  original_thought: string
-  why_it_felt_true: string
-  what_changed: string
-  balanced_thought: string
 }
 
 export type ConversationResponse = {
@@ -51,3 +36,18 @@ export type ConversationSummaryResponse = {
   conversation_id: string
   summary: ModelSummaryData
 }
+
+export type ConversationPhase =
+  | 'working_belief'
+  | 'belief_confirmation'
+  | 'evidence_form'
+  | 'reflection'
+  | 'complete'
+
+export type ModelSummaryData = {
+  original_thought: string
+  why_it_felt_true: string
+  what_changed: string
+  balanced_thought: string
+}
+

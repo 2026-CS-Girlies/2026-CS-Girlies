@@ -70,12 +70,13 @@ export default function ThemeButton({
                   }}
                 >
                   <span
-                    className="w-4 h-4 rounded-full flex-none"
+                    className="w-5 h-5 flex items-center justify-center flex-none"
                     style={{
-                      background: theme.swatch,
-                      border: '1.5px solid rgba(255,255,255,0.15)',
+                      color: isActive ? c.text : c.textMuted,
                     }}
-                  />
+                  >
+                    {theme.icon}
+                  </span>
 
                   <span
                     className="text-sm flex-1"
@@ -158,9 +159,13 @@ export default function ThemeButton({
         >
           {activeTheme && (
             <span
-              className="w-2.5 h-2.5 rounded-full flex-none"
-              style={{ background: activeTheme.swatch }}
-            />
+              className="w-5 h-5 flex items-center justify-center flex-none"
+              style={{
+                color: c.customizeText,
+              }}
+            >
+              {activeTheme.icon}
+            </span>
           )}
           <span>
             theme

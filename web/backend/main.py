@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from ConversationEngine.conversation_engine import ConversationEngine
+from ConversationEngine.schema import FinalSummaryExtraction
 
 
 app = FastAPI(title="Still True API")
@@ -31,27 +32,26 @@ class BeliefConfirmationRequest(BaseModel):
     confirmed: bool
 
 
-def _build_response(conversation_id: str, engine: ConversationEngine, message: str | None = None) -> dict:
+class ConversationResponse(BaseModel):
+    conversation_id: str
+    phase: str
+    message: str | None = None
+    working_belief: str | None = None
+    data: FinalSummaryExtraction | None = None
+    stage_complete: bool = False
+
+
+def _build_response(conversation_id: str, engine: ConversationEngine, message: str | None = None) -> ConversationResponse:
     phase = engine.state["phase"]
-    data = None
 
-    if phase == "complete":
-        data = {
-            "working_belief": engine.state.get("working_belief"),
-            "evidence_for": engine.state.get("evidence_for", []),
-            "evidence_reviews": engine.state.get("evidence_reviews", []),
-            "balanced_thought": engine.state.get("balanced_thought"),
-        }
-
-    return {
-        "conversation_id": conversation_id,
-        "phase": phase,
-        "message": message,
-        "working_belief": engine.state.get("working_belief"),
-        "balanced_thought": engine.state.get("balanced_thought"),
-        "data": data,
-        "stage_complete": phase == "complete",
-    }
+    return ConversationResponse(
+        conversation_id=conversation_id,
+        phase=phase,
+        message=message,
+        working_belief=engine.state.get("working_belief"),
+        data=engine.state.get("final_summary") if phase == "complete" else None,
+        stage_complete=phase == "complete",
+    )
 
 
 @app.get("/")
@@ -59,7 +59,7 @@ def root():
     return {"message": "Still True backend is running."}
 
 
-@app.post("/api/conversations")
+@app.post("/api/conversations", response_model=ConversationResponse)
 def start_conversation(request: StartConversationRequest):
     initial_thought = request.initial_thought.strip()
     if not initial_thought:
@@ -81,7 +81,7 @@ def start_conversation(request: StartConversationRequest):
     return _build_response(conversation_id, engine, message)
 
 
-@app.post("/api/conversations/{conversation_id}/messages")
+@app.post("/api/conversations/{conversation_id}/messages", response_model=ConversationResponse)
 async def send_message(conversation_id: str, request: MessageRequest):
     engine = conversations.get(conversation_id)
     if engine is None:
@@ -100,7 +100,7 @@ async def send_message(conversation_id: str, request: MessageRequest):
     return _build_response(conversation_id, engine, message)
 
 
-@app.post("/api/conversations/{conversation_id}/belief-confirmation")
+@app.post("/api/conversations/{conversation_id}/belief-confirmation", response_model=ConversationResponse)
 async def confirm_belief(conversation_id: str, request: BeliefConfirmationRequest):
     engine = conversations.get(conversation_id)
     if engine is None:
@@ -123,7 +123,7 @@ async def confirm_belief(conversation_id: str, request: BeliefConfirmationReques
     return _build_response(conversation_id, engine, message)
 
 
-@app.post("/api/conversations/{conversation_id}/evidence/complete")
+@app.post("/api/conversations/{conversation_id}/evidence/complete", response_model=ConversationResponse)
 async def complete_evidence_collection(conversation_id: str):
     engine = conversations.get(conversation_id)
     if engine is None:
@@ -137,6 +137,26 @@ async def complete_evidence_collection(conversation_id: str):
     return _build_response(conversation_id, engine, message)
 
 
+@app.post("/api/conversations/{conversation_id}/reflection/complete", response_model=ConversationResponse)
+async def complete_reflection(conversation_id: str):
+    engine = conversations.get(conversation_id)
+    if engine is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if engine.state["phase"] != "reflection":
+        raise HTTPException(status_code=400, detail="Not in reflection phase")
+
+    try:
+        engine.generate_summary()
+    except Exception as exc:
+        print("[SUMMARY ERROR]", exc)
+        raise HTTPException(status_code=500, detail="Could not generate summary") from exc
+
+    response = _build_response(conversation_id, engine)
+
+    print("[REFLECTION COMPLETE RESPONSE]", response)
+    return response
+
+
 @app.get("/api/conversations/{conversation_id}/summary")
 async def get_conversation_summary(conversation_id: str):
     engine = conversations.get(conversation_id)
@@ -145,11 +165,11 @@ async def get_conversation_summary(conversation_id: str):
     if engine.state["phase"] != "complete":
         raise HTTPException(status_code=400, detail="Conversation is not complete yet")
 
-    try:
-        summary = engine.generate_summary()
-    except Exception as exc:
-        print("[SUMMARY ERROR]", exc)
-        raise HTTPException(status_code=500, detail="Could not generate summary") from exc
+    summary = engine.state.get("final_summary")
+    if summary is None:
+        raise HTTPException(status_code=404, detail="Summary not found")
 
-    print("[SUMMARY RESULT]", summary)
-    return {"conversation_id": conversation_id, "summary": summary}
+    return {
+        "conversation_id": conversation_id,
+        "data": summary,
+    }

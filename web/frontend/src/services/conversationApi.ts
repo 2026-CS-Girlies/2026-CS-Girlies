@@ -58,6 +58,12 @@ export function completeEvidenceCollection(conversationId: string): Promise<Conv
   })
 }
 
+export function completeReflection(conversationId: string): Promise<ConversationResponse> {
+  return request<ConversationResponse>(`/api/conversations/${conversationId}/reflection/complete`, {
+    method: 'POST',
+  })
+}
+
 export function getConversationSummary(conversationId: string): Promise<ConversationSummaryResponse> {
   return request<ConversationSummaryResponse>(`/api/conversations/${conversationId}/summary`, {
     method: 'GET',

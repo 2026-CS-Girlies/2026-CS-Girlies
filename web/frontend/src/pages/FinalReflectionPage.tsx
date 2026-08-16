@@ -19,12 +19,13 @@ type Props = {
   onRestart: () => void
 }
 
-const getSummaryItems = (summary?: ModelSummaryData) => [
-  ['The Original Thought', summary?.original_thought],
+export const getSummaryItems = (summary?: ModelSummaryData) => [
+  ['Original Thought', summary?.original_thought],
   ['Why It Felt True', summary?.why_it_felt_true],
-  ['What Changed When You Looked Closer', summary?.what_changed],
+  ['What Changed', summary?.what_changed],
   ['A More Balanced Thought', summary?.balanced_thought],
 ] as const
+
 
 export default function FinalReflectionPage({ conversationId, bg, isLight, onBack, onRestart }: Props) {
   const c = tk(isLight)
@@ -83,10 +84,10 @@ export default function FinalReflectionPage({ conversationId, bg, isLight, onBac
 
       <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-auto px-5 md:px-8 py-6">
         <div style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'scale(0.96)' : 'scale(1)', filter: leaving ? 'blur(10px)' : 'blur(0)', transition: leaving ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in' : 'none' }}>
-          <StepHeader current="04" total="04" isLight={isLight} onRestart={() => setLeaving(true)} restartLabel="START A NEW REFLECTION" className="pb-4" />
+          <StepHeader current="03" total="03" isLight={isLight} onRestart={() => setLeaving(true)} restartLabel="START A NEW REFLECTION" className="pb-4" />
 
           <div className="relative z-10 w-full max-w-[900px] mx-auto flex flex-col items-center gap-6 md:gap-8 pb-8">
-            <PageIntro isLight={isLight} title="A Clearer View" description="You examined the thought from more than one side. Here’s the perspective you arrived at." maxWidth="max-w-xl" />
+            <PageIntro isLight={isLight} title="A Clearer View" description="Here’s how your perspective changed through the conversation — including what stayed uncertain." maxWidth="max-w-xl" />
 
             <ContentCard isLight={isLight}>
               {summaryLoading ? (

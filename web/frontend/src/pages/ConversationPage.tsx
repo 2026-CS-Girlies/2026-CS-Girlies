@@ -3,12 +3,13 @@ import DustCanvas from '@/components/animation/DustCanvas'
 import ChatPanel from '@/components/chat/ChatPanel'
 import ConfirmationBubble from '@/components/chat/ConfirmationBubble'
 import EvidenceTray from '@/components/chat/EvidenceTray'
+import ReflectionGuideActions from '@/components/chat/ReflectionGuideActions'
 import BottomNav from '@/components/reflection/BottomNav'
 import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
 import { conversationPhaseConfig } from '@/config/conversationPhases'
-import { completeEvidenceCollection, confirmBelief, sendConversationMessage } from '@/services/conversationApi'
+import { completeEvidenceCollection, completeReflection, confirmBelief, sendConversationMessage } from '@/services/conversationApi'
 import type { Message } from '@/types/chat'
 import type { ConversationPhase, ConversationResponse } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
@@ -23,6 +24,8 @@ type Props = {
   onComplete: (conversationId: string) => void
 }
 
+const STEP_HELP_MESSAGE = "This step is for looking at the thought from different angles at your own pace. There isn't a required number of questions or a correct conclusion. Keep talking for as long as it feels useful, and choose when you're ready to see what changed."
+
 export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart, initialConversation }: Props) {
   const conversationId = initialConversation.conversation_id
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -31,7 +34,6 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   })
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isComplete, setIsComplete] = useState(initialConversation.stage_complete)
   const [error, setError] = useState('')
   const [leaving, setLeaving] = useState(false)
   const [phase, setPhase] = useState<ConversationPhase>(initialConversation.phase)
@@ -74,7 +76,6 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       appendAssistantMessage(response.message)
       if (response.working_belief) setWorkingBelief(response.working_belief)
       setPhase(response.phase)
-      setIsComplete(response.stage_complete)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the message.')
     } finally {
@@ -107,8 +108,6 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       setIsLoading(true)
       setError('')
 
-      setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: "I'm ready to investigate this evidence" }])
-
       const response = await completeEvidenceCollection(conversationId)
       setPhase(response.phase)
       appendAssistantMessage(response.message)
@@ -119,12 +118,31 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
     }
   }
 
-  const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') void sendMessage()
+  const finishReflection = async () => {
+    if (isLoading || phase !== 'reflection') return
+
+    try {
+      setIsLoading(true)
+      setError('')
+      await completeReflection(conversationId)
+      onComplete(conversationId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create your reflection.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const goToReflection = () => {
-    if (isComplete) onComplete(conversationId)
+  const showStepHelp = () => {
+    setMessages(prev => {
+      const last = prev[prev.length - 1]
+      if (last?.role === 'assistant' && last.text === STEP_HELP_MESSAGE) return prev
+      return [...prev, { id: Date.now(), role: 'assistant', text: STEP_HELP_MESSAGE }]
+    })
+  }
+
+  const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') void sendMessage()
   }
 
   return (
@@ -133,10 +151,27 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
 
       <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-hidden">
         <div className="flex flex-col flex-1 min-h-0" style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'scale(0.96)' : 'scale(1)', filter: leaving ? 'blur(10px)' : 'blur(0)', transition: leaving ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in' : 'none' }}>
-          <StepHeader current={phaseConfig.step} total="04" isLight={isLight} onBack={onBack} onRestart={() => setLeaving(true)} className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4" />
+          <StepHeader current={phaseConfig.step} total="03" isLight={isLight} onBack={onBack} onRestart={() => setLeaving(true)} className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4" />
           <PageIntro isLight={isLight} title={phaseConfig.title} description={phaseConfig.description} className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none" />
 
-          <ChatPanel isLight={isLight} messages={messages} openingThought={thought} input={input} onInputChange={setInput} onSend={() => void sendMessage()} onKeyDown={handleKey} isLoading={isLoading} isComplete={inputDisabled} error={error} placeholder="Write what comes to mind…" bottomRef={bottomRef} inputRef={inputRef}>
+          <ChatPanel
+            isLight={isLight}
+            messages={messages}
+            openingThought={thought}
+            input={input}
+            onInputChange={setInput}
+            onSend={() => void sendMessage()}
+            onKeyDown={handleKey}
+            isLoading={isLoading}
+            isComplete={inputDisabled}
+            error={error}
+            placeholder="Write what comes to mind…"
+            bottomRef={bottomRef}
+            inputRef={inputRef}
+            inputActions={phase === 'reflection' ? (
+              <ReflectionGuideActions isLight={isLight} isLoading={isLoading} onReady={() => void finishReflection()} onHelp={showStepHelp} />
+            ) : undefined}
+          >
             {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} />}
 
             {phase === 'belief_confirmation' && workingBelief && (
@@ -149,20 +184,11 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
                 onConfirm={() => void confirmWorkingBelief(true)}
               />
             )}
-
-            {isComplete && (
-              <ConfirmationBubble
-                isLight={isLight}
-                message={<>You’ve finished looking at this thought.<br />Ready to see your reflection?</>}
-                rejectLabel="Not Yet"
-                confirmLabel="See My Reflection →"
-                onReject={() => setIsComplete(false)}
-                onConfirm={goToReflection}
-              />
-            )}
           </ChatPanel>
 
-          <BottomNav isLight={isLight} onBack={onBack} backLabel="HOME" onNext={goToReflection} nextLabel="SEE MY REFLECTION" nextDisabled={!isComplete} />
+          {phase !== 'reflection' && phase !== 'complete' && (
+            <BottomNav isLight={isLight} onBack={onBack} backLabel="HOME" onNext={() => {}} nextLabel="SEE MY REFLECTION" nextDisabled />
+          )}
         </div>
       </ReflectionShell>
     </>
