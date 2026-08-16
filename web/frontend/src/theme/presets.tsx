@@ -11,22 +11,22 @@ import type { SoundId, ThemePreset } from '@/types/theme'
 
 
 
-export const SOUNDS: { id: SoundId; label: string; icon: ReactNode }[] = [
-  { id: 'none',   label: 'Mute',   icon: <SoundOffIcon /> },
-  { id: 'rain',   label: 'Rain',   icon: <SoundRainIcon /> },
-  { id: 'ocean',  label: 'Ocean',  icon: <SoundOceanIcon /> },
-  { id: 'forest', label: 'Forest', icon: <SoundForestIcon /> },
-  { id: 'fire',   label: 'Fire',   icon: <SoundFireIcon /> },
-  { id: 'wind',   label: 'Wind',   icon: <SoundWindIcon /> },
+export const SOUNDS: { id: SoundId; label: string; icon: ReactNode, src?: string }[] = [
+  { id: 'none', label: 'Mute', icon: <SoundOffIcon /> },
+  { id: 'rain', label: 'Rain', icon: <SoundRainIcon />, src: '/sounds/rain.wav' },
+  { id: 'ocean', label: 'Ocean', icon: <SoundOceanIcon />, src: '/sounds/ocean.wav' },
+  { id: 'forest', label: 'Forest', icon: <SoundForestIcon />, src: '/sounds/forest.wav' },
+  { id: 'fire', label: 'Fire', icon: <SoundFireIcon />, src: '/sounds/fire.wav' },
+  { id: 'wind', label: 'Wind', icon: <SoundWindIcon />, src: '/sounds/wind.wav' },
 ]
 
 export const THEMES: ThemePreset[] = [
-  { id: 'rain',   label: 'Rain',   icon: <SoundRainIcon />,   sound: 'rain',   swatch: '#1a2535', bg: { type: 'color', value: '#1a2535' } },
-  { id: 'ocean',  label: 'Ocean',  icon: <SoundOceanIcon />,  sound: 'ocean',  swatch: '#0d2137', bg: { type: 'color', value: '#0d2137' } },
-  { id: 'forest', label: 'Forest', icon: <SoundForestIcon />, sound: 'forest', swatch: '#111e14', bg: { type: 'color', value: '#111e14' } },
-  { id: 'fire',   label: 'Fire',   icon: <SoundFireIcon />,   sound: 'fire',   swatch: '#1e1008', bg: { type: 'color', value: '#1e1008' } },
-  { id: 'wind',   label: 'Wind',   icon: <SoundWindIcon />,   sound: 'wind',   swatch: '#161620', bg: { type: 'color', value: '#161620' } },
-  { id: 'none',   label: 'Simple', icon: <SoundOffIcon />,    sound: 'none',   swatch: '#0f0f0f', bg: { type: 'color', value: '#0f0f0f' } },
+  { id: 'rain',   label: 'Rain',   icon: <SoundRainIcon />,   sound: 'rain',   swatch: '#1a2535', bg: { type: 'image', url: '/images/rain.png' } },
+  { id: 'ocean',  label: 'Ocean',  icon: <SoundOceanIcon />,  sound: 'ocean',  swatch: '#0d2137', bg: { type: 'image', url: '/images/ocean.png' } },
+  { id: 'forest', label: 'Forest', icon: <SoundForestIcon />, sound: 'forest', swatch: '#111e14', bg: { type: 'image', url: '/images/forest.png' } },
+  { id: 'fire',   label: 'Fire',   icon: <SoundFireIcon />,   sound: 'fire',   swatch: '#1e1008', bg: { type: 'image', url: '/images/fire.png' } },
+  { id: 'wind',   label: 'Wind',   icon: <SoundWindIcon />,   sound: 'wind',   swatch: '#161620', bg: { type: 'image', url: '/images/wind.png' } },
+  { id: 'none',   label: 'Simple', icon: <SoundOffIcon />,    sound: 'none',   swatch: '#0f0f0f', bg: { type: 'color', value:'#0f0f0f' } },
 ]
 
 export const PRESET_COLORS = [
