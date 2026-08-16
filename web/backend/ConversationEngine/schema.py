@@ -16,3 +16,10 @@ class EvidenceReviewExtraction(BaseModel):
 class VerdictExtraction(BaseModel):
     balanced_thought: str | None = None
     verdict_confirmed: bool = False
+
+
+class FinalSummaryExtraction(BaseModel):
+    original_thought: str
+    why_it_felt_true: str
+    what_changed: str
+    balanced_thought: str
