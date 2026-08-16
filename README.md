@@ -3,19 +3,15 @@
 
 ## Inspiration & Overview
 
-> **“Depression is about 1.5 times more common among women than among men.”**  
-> *— World Health Organization, [Depressive disorder (depression)](https://www.who.int/news-room/fact-sheets/detail/depression), 2025*
-
-> **23.4% of U.S. women experienced an anxiety disorder in the past year, compared with 14.3% of men.**  
-> *— [National Institute of Mental Health, Any Anxiety Disorder](https://www.nimh.nih.gov/health/statistics/any-anxiety-disorder)*
-
-Women experience anxiety and depression at disproportionately high rates, and difficult thoughts can become especially convincing when someone is stressed, anxious, or emotionally low. We wanted to create a tool that could help users slow down and examine those thoughts on their own instead of simply receiving reassurance.
+Anxiety, low mood, excessive worry, and self-critical thinking are common experiences that can significantly affect a person's well-being.
+Cognitive Behavioral Therapy provided an interesting direction because Cognitive Restructuring focuses on examining the thoughts and beliefs behind emotional distress rather than simply replacing them.
+We wanted to create a tool that could help users slow down and examine those thoughts on their own instead of simply receiving reassurance.
 
 **Still True** is an AI-guided Cognitive Restructuring tool inspired by Cognitive Behavioral Therapy (CBT). It helps users **identify the belief behind a negative thought, explore why it feels true, and reflect on the evidence before developing a more balanced perspective**.
 
 Instead of asking users to simply “think positively,” 
 
-Still True asks: "After looking at the evidence, is this thought still true?"
+Still True asks: **"After looking at the evidence, is this thought still true?"**
 
 ## Methodology
 
