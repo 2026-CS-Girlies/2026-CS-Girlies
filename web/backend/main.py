@@ -25,15 +25,11 @@ app = FastAPI(title="Still True API")
 engine = ConversationEngine()
 conversations: dict[str, ConversationEngine] = {}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware,
+                    allow_origins=["http://localhost:5173",],
+                    allow_credentials=True,
+                    allow_methods=["*"],
+                    allow_headers=["*"],)
 
 
 # -----------------------------------------------------------------------------
@@ -48,18 +44,25 @@ class MessageRequest(BaseModel):
 class EvidenceRequest(BaseModel):
     evidence: list[str]
 
+class BeliefConfirmationRequest(BaseModel):
+    confirmed: bool
+
+class EvidenceRequest(BaseModel):
+    evidence: list[str]
+
+class VerdictConfirmationRequest(BaseModel):
+    confirmed: bool
+
+
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
 
-def _build_response(
-    conversation_id: str,
-    engine: ConversationEngine,
-    message: str | None = None,
-) -> dict:
+def _build_response(conversation_id: str, engine: ConversationEngine,
+                    message: str | None = None,) -> dict:
 
     phase = engine.state["phase"]
-
+    
     if phase == "complete":
         return {
             "conversation_id": conversation_id,
@@ -79,7 +82,9 @@ def _build_response(
         "phase": phase,
         "message": message,
         "data": None,
-        "stage_complete": False,
+        "working_belief": engine.state.get("working_belief"),
+        "balanced_thought": engine.state.get("balanced_thought"),
+        "stage_complete": phase == "complete",
     }
 
 
@@ -205,3 +210,37 @@ async def send_message(conversation_id: str, request: MessageRequest,):
         )
 
     return _build_response(conversation_id=conversation_id, engine=engine, message=result)
+
+
+@app.post("/api/conversations/{conversation_id}/belief-confirmation")
+async def confirm_belief(conversation_id: str, request: BeliefConfirmationRequest):
+    engine = conversations.get(conversation_id)
+
+    if engine is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
+    if engine.state["phase"] != "belief_confirmation":
+        raise HTTPException(
+            status_code=400,
+            detail="Not waiting for belief confirmation",
+        )
+
+    if request.confirmed:
+        engine.state["working_belief_confirmed"] = True
+        engine.state["phase"] = "evidence_form"
+
+    else:
+        engine.state["working_belief_confirmed"] = False
+        engine.state["phase"] = "working_belief"
+
+    print("[BELIEF CONFIRMED]", request.confirmed)
+    print("[PHASE]", engine.state["phase"])
+
+    return _build_response(
+        conversation_id=conversation_id,
+        engine=engine,
+        message=None,
+    )

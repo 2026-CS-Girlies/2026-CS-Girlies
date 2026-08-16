@@ -180,7 +180,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
                 isLight={isLight}
                 message={
                   <>
-                    Is this the thought you want to examine?
+                    This sounds like the thought that’s been weighing on you.
                     <span className="block mt-2">
                       “{workingBelief}”
                     </span>
