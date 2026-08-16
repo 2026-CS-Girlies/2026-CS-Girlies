@@ -1,13 +1,13 @@
 from langchain_core.messages import HumanMessage, AIMessage
-from model import working_belief_llm, crispers_llm, extractor_llm
+from .model import working_belief_llm, crispers_llm, extractor_llm
 
-from state import StillTrueState
+from .state import StillTrueState
 
-from schema import WorkingBeliefExtraction, EvidenceReviewExtraction, EvidenceReview, VerdictExtraction
+from .schema import WorkingBeliefExtraction, EvidenceReviewExtraction, VerdictExtraction
 
-from prompts.working_belief import working_belief_prompt
-from prompts.evidence_review import evidence_review_prompt, evidence_review_extraction_prompt
-from prompts.verdict import verdict_prompt, verdict_extraction_prompt
+from .prompts.working_belief import working_belief_prompt
+from .prompts.evidence_review import evidence_review_prompt, evidence_review_extraction_prompt
+from .prompts.verdict import verdict_prompt, verdict_extraction_prompt
 
 
 
@@ -53,23 +53,18 @@ class ConversationEngine:
         raise ValueError(f"Unknown phase: {phase}")
 
 
-    """
-    class WorkingBeliefExtraction(BaseModel):
-        message: str
-        working_belief: str | None = None
-        belief_clear: bool = False
-        user_confirmed: bool = False
-    """
-
     def _handle_working_belief_phase(self, user_message):
 
         history = self.state["working_belief_messages"]
+        prompt_input = {"history": history, "user_message": user_message}
 
-        result = working_belief_extraction_prompt.invoke({
-            "history": history,
-            "user_message": user_message,
-        })
 
+        # 1. Build prompt messages
+        messages = (working_belief_prompt.invoke(prompt_input).to_messages()) #changed to messeage list form ChatPromptValue object
+        # 2. Qwen sturctured output
+        structured_llm = (working_belief_llm.with_structured_output(WorkingBeliefExtraction))
+        result = structured_llm.invoke(messages)
+        
         if result.working_belief is not None:
             self.state["working_belief"] = result.working_belief
 
