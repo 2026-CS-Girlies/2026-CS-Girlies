@@ -31,25 +31,19 @@ class BeliefConfirmationRequest(BaseModel):
     confirmed: bool
 
 
-def _build_response(conversation_id: str, engine: ConversationEngine, message: str | None = None) -> dict:
+def _build_response(
+    conversation_id: str,
+    engine: ConversationEngine,
+    message: str | None = None,
+) -> dict:
     phase = engine.state["phase"]
-    data = None
-
-    if phase == "complete":
-        data = {
-            "working_belief": engine.state.get("working_belief"),
-            "evidence_for": engine.state.get("evidence_for", []),
-            "evidence_reviews": engine.state.get("evidence_reviews", []),
-            "balanced_thought": engine.state.get("balanced_thought"),
-        }
 
     return {
         "conversation_id": conversation_id,
         "phase": phase,
         "message": message,
         "working_belief": engine.state.get("working_belief"),
-        "balanced_thought": engine.state.get("balanced_thought"),
-        "data": data,
+        "data": engine.state.get("final_summary") if phase == "complete" else None,
         "stage_complete": phase == "complete",
     }
 
@@ -62,8 +56,12 @@ def root():
 @app.post("/api/conversations")
 def start_conversation(request: StartConversationRequest):
     initial_thought = request.initial_thought.strip()
+
     if not initial_thought:
-        raise HTTPException(status_code=400, detail="initial_thought cannot be empty")
+        raise HTTPException(
+            status_code=400,
+            detail="initial_thought cannot be empty",
+        )
 
     conversation_id = str(uuid.uuid4())
     engine = ConversationEngine()
@@ -75,38 +73,63 @@ def start_conversation(request: StartConversationRequest):
     except Exception as exc:
         conversations.pop(conversation_id, None)
         print("[MODEL ERROR] start_conversation:", exc)
-        raise HTTPException(status_code=500, detail="Model request failed") from exc
+        raise HTTPException(
+            status_code=500,
+            detail="Model request failed",
+        ) from exc
 
-    print(f"[START] {conversation_id}: {initial_thought}")
     return _build_response(conversation_id, engine, message)
 
 
 @app.post("/api/conversations/{conversation_id}/messages")
-async def send_message(conversation_id: str, request: MessageRequest):
+async def send_message(
+    conversation_id: str,
+    request: MessageRequest,
+):
     engine = conversations.get(conversation_id)
+
     if engine is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
     if engine.state["phase"] == "complete":
-        raise HTTPException(status_code=400, detail="Conversation is already complete.")
+        raise HTTPException(
+            status_code=400,
+            detail="Conversation is already complete.",
+        )
 
     try:
         message = engine.chat(request.message)
     except Exception as exc:
         print("[MODEL ERROR] send_message:", exc)
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+        ) from exc
 
-    print("[FASTAPI RESULT]", message)
-    print("[PHASE]", engine.state["phase"])
     return _build_response(conversation_id, engine, message)
 
 
 @app.post("/api/conversations/{conversation_id}/belief-confirmation")
-async def confirm_belief(conversation_id: str, request: BeliefConfirmationRequest):
+async def confirm_belief(
+    conversation_id: str,
+    request: BeliefConfirmationRequest,
+):
     engine = conversations.get(conversation_id)
+
     if engine is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
     if engine.state["phase"] != "belief_confirmation":
-        raise HTTPException(status_code=400, detail="Not waiting for belief confirmation")
+        raise HTTPException(
+            status_code=400,
+            detail="Not waiting for belief confirmation",
+        )
 
     if request.confirmed:
         engine.state["working_belief_confirmed"] = True
@@ -126,30 +149,47 @@ async def confirm_belief(conversation_id: str, request: BeliefConfirmationReques
 @app.post("/api/conversations/{conversation_id}/evidence/complete")
 async def complete_evidence_collection(conversation_id: str):
     engine = conversations.get(conversation_id)
+
     if engine is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
 
     try:
         message = engine.finish_evidence_collection()
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
 
     return _build_response(conversation_id, engine, message)
 
 
-@app.get("/api/conversations/{conversation_id}/summary")
-async def get_conversation_summary(conversation_id: str):
+@app.post("/api/conversations/{conversation_id}/reflection/complete")
+async def complete_reflection(conversation_id: str):
     engine = conversations.get(conversation_id)
+
     if engine is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    if engine.state["phase"] != "complete":
-        raise HTTPException(status_code=400, detail="Conversation is not complete yet")
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
+    if engine.state["phase"] != "reflection":
+        raise HTTPException(
+            status_code=400,
+            detail="Not in reflection phase",
+        )
 
     try:
-        summary = engine.generate_summary()
+        engine.generate_summary()
     except Exception as exc:
         print("[SUMMARY ERROR]", exc)
-        raise HTTPException(status_code=500, detail="Could not generate summary") from exc
+        raise HTTPException(
+            status_code=500,
+            detail="Could not generate summary",
+        ) from exc
 
-    print("[SUMMARY RESULT]", summary)
-    return {"conversation_id": conversation_id, "summary": summary}
+    return _build_response(conversation_id, engine)

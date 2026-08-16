@@ -10,14 +10,11 @@ class StillTrueState(TypedDict, total=False):
     working_belief: str | None
     working_belief_confirmed: bool
 
-    # Evidence form
+    # Evidence
     evidence_for: list[str]
 
-    # Evidence review
-    evidence_index: int
-    evidence_review_messages: list
-    evidence_reviews: list
+    # Open-ended reflection
+    reflection_messages: list
 
-    # Verdict
-    verdict_messages: list
-    balanced_thought: str | None
+    # Final summary
+    final_summary: dict | None
