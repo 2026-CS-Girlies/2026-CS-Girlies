@@ -4,7 +4,7 @@
 <a href="https://www.youtube.com/watch?v=K7SY0SLkqqo">
   <img src="https://img.youtube.com/vi/K7SY0SLkqqo/maxresdefault.jpg" width="500">
 </a>
-> Click the image above to watch the demo.
+< Click the image to watch the demo.
 
 ## Inspiration & Overview
 
