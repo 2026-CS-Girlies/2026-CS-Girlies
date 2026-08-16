@@ -1,6 +1,7 @@
 from langchain_core.messages import AIMessage, HumanMessage
 
 from .model import crispers_llm, extractor_llm, working_belief_llm
+from .prompts.final_summary import FINAL_SUMMARY_PROMPT
 from .prompts.reflection import reflection_prompt
 from .prompts.working_belief import working_belief_prompt
 from .schema import FinalSummaryExtraction, WorkingBeliefExtraction
@@ -134,45 +135,20 @@ class ConversationEngine:
             for message in self.state["reflection_messages"]
         )
 
-        prompt = f"""
-Create a concise final reflection summary using only the information below.
+        prompt_input = {
+                "working_belief": self.state.get("working_belief") or "",
+                "evidence_for": self.state.get("evidence_for", []),
+                "conversation": conversation,
+            }
 
-Do not invent events, beliefs, progress, or advice.
-Do not make the user's perspective more positive than it actually became.
-If the user remained uncertain, preserve that uncertainty.
-
-Original thought:
-{self.state.get("working_belief")}
-
-Evidence provided by the user:
-{self.state.get("evidence_for", [])}
-
-Reflection conversation:
-{conversation}
-
-Return these fields:
-
-original_thought:
-Preserve the working belief as closely as possible.
-
-why_it_felt_true:
-Summarize the experiences and reasoning that made the thought feel believable.
-
-what_changed:
-Summarize what became clearer, less certain, or was reconsidered during the reflection.
-If little or nothing changed, say so.
-
-balanced_thought:
-Use the most balanced perspective that actually emerged from the user's conversation.
-Do not create a healthier or more positive conclusion that the user did not reach.
-If no clear balanced thought emerged, preserve the user's uncertainty rather than inventing one.
-""".strip()
+        prompt = FINAL_SUMMARY_PROMPT.format(**prompt_input)
 
         result = extractor_llm.with_structured_output(
             FinalSummaryExtraction
         ).invoke(prompt)
 
         summary = result.model_dump()
+
         self.state["final_summary"] = summary
         self.state["phase"] = "complete"
 

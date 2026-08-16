@@ -23,8 +23,7 @@ export type ConversationResponse = {
   phase: ConversationPhase
   message: string | null
   working_belief: string | null
-  balanced_thought: string | null
-  data: ConversationStateData | null
+  data: ModelSummaryData | null
   stage_complete: boolean
 }
 
@@ -34,7 +33,7 @@ export type BeliefConfirmationRequest = {
 
 export type ConversationSummaryResponse = {
   conversation_id: string
-  summary: ModelSummaryData
+  data: ModelSummaryData
 }
 
 export type ConversationPhase =
