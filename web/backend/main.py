@@ -1,43 +1,24 @@
-from pathlib import Path
-import sys
 import uuid
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-
-# -----------------------------------------------------------------------------
-# Import compatibility
-# -----------------------------------------------------------------------------
-
-CURRENT_DIR = Path(__file__).resolve().parent
-PARENT_DIR = CURRENT_DIR.parent
-
-for path in (CURRENT_DIR, PARENT_DIR):
-    path_str = str(path)
-    if path_str not in sys.path:
-        sys.path.insert(0, path_str)
-
-from CR.cr_helper import CRHelper  # noqa: E402
+from ConversationEngine.conversation_engine import ConversationEngine
 
 
 app = FastAPI(title="Still True API")
+conversations: dict[str, ConversationEngine] = {}
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-    ],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# -----------------------------------------------------------------------------
-# Request models
-# -----------------------------------------------------------------------------
 class StartConversationRequest(BaseModel):
     initial_thought: str
 
@@ -46,190 +27,129 @@ class MessageRequest(BaseModel):
     message: str
 
 
-# -----------------------------------------------------------------------------
-# Temporary in-memory conversation storage
-# -----------------------------------------------------------------------------
-# One CRHelper instance = one conversation.
-# Restarting the FastAPI server clears all conversations.
-conversations: dict[str, CRHelper] = {}
+class BeliefConfirmationRequest(BaseModel):
+    confirmed: bool
 
 
-# -----------------------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------------------
-def _stage_value(helper: CRHelper) -> str:
-    return helper.stage.value
+def _build_response(conversation_id: str, engine: ConversationEngine, message: str | None = None) -> dict:
+    phase = engine.state["phase"]
+    data = None
 
-
-def _phase_value(helper: CRHelper) -> str | None:
-    return helper.phase.value if helper.phase is not None else None
-
-
-def _summary_from_helper(helper: CRHelper) -> dict:
-    """
-    CRHelper.complete() creates these attributes through summarize().
-
-    The current CRHelper.handle_verdict() calls complete() but does not return
-    its result. Reading the generated values here lets main.py work without
-    changing cr_helper.py.
-    """
-    return {
-        "intermediate_belief": getattr(helper, "intermediate_belief", None),
-        "core_belief": getattr(helper, "core_belief", None),
-        "core_belief_inferred": getattr(helper, "core_belief_inferred", False),
-        "balanced_thought": getattr(helper, "balanced_thought", None),
-        "current_progress": getattr(helper, "current_progress", None),
-        "next_steps": getattr(helper, "next_steps", []),
-    }
-
-
-def _build_response(
-    conversation_id: str,
-    helper: CRHelper,
-    result,
-) -> dict:
-    if helper.is_complete():
-        # If CRHelper is later changed to return the summary directly,
-        # prefer that result. Otherwise read the values stored on the helper.
-        summary = result if isinstance(result, dict) else _summary_from_helper(helper)
-
-        return {
-            "conversation_id": conversation_id,
-            "stage": _stage_value(helper),
-            "phase": None,
-            "message": None,
-            "data": summary,
-            "stage_complete": True,
+    if phase == "complete":
+        data = {
+            "working_belief": engine.state.get("working_belief"),
+            "evidence_for": engine.state.get("evidence_for", []),
+            "evidence_reviews": engine.state.get("evidence_reviews", []),
+            "balanced_thought": engine.state.get("balanced_thought"),
         }
 
     return {
         "conversation_id": conversation_id,
-        "stage": _stage_value(helper),
-        "phase": _phase_value(helper),
-        "message": result,
-        "data": None,
-        "stage_complete": False,
+        "phase": phase,
+        "message": message,
+        "working_belief": engine.state.get("working_belief"),
+        "balanced_thought": engine.state.get("balanced_thought"),
+        "data": data,
+        "stage_complete": phase == "complete",
     }
 
 
-# -----------------------------------------------------------------------------
-# Routes
-# -----------------------------------------------------------------------------
 @app.get("/")
 def root():
-    return {
-        "message": "Still True backend is running."
-    }
+    return {"message": "Still True backend is running."}
 
 
 @app.post("/api/conversations")
 def start_conversation(request: StartConversationRequest):
     initial_thought = request.initial_thought.strip()
-
     if not initial_thought:
-        raise HTTPException(
-            status_code=400,
-            detail="initial_thought cannot be empty",
-        )
+        raise HTTPException(status_code=400, detail="initial_thought cannot be empty")
 
     conversation_id = str(uuid.uuid4())
-    helper = CRHelper()
-    conversations[conversation_id] = helper
+    engine = ConversationEngine()
+    engine.state["initial_thought"] = initial_thought
+    conversations[conversation_id] = engine
 
     try:
-        # The thought entered on the Landing page becomes the first user turn.
-        result = helper.chat(initial_thought)
+        message = engine.chat(initial_thought)
     except Exception as exc:
-        # Do not keep a conversation that failed during initialization.
         conversations.pop(conversation_id, None)
-        print(f"[MODEL ERROR] start_conversation: {exc}")
-        raise HTTPException(
-            status_code=500,
-            detail="Model request failed",
-        ) from exc
+        print("[MODEL ERROR] start_conversation:", exc)
+        raise HTTPException(status_code=500, detail="Model request failed") from exc
 
     print(f"[START] {conversation_id}: {initial_thought}")
-
-    return _build_response(
-        conversation_id=conversation_id,
-        helper=helper,
-        result=result,
-    )
+    return _build_response(conversation_id, engine, message)
 
 
 @app.post("/api/conversations/{conversation_id}/messages")
-async def send_message(
-    conversation_id: str,
-    request: MessageRequest,
-):
-    if conversation_id not in conversations:
-        raise HTTPException(
-            status_code=404,
-            detail="Conversation not found",
-        )
-
-
-    if request.message == "__test__":
-        return {
-            "conversation_id": conversation_id,
-            "stage": "complete",
-            "phase": None,
-            "message": None,
-            "stage_complete": True,
-            "data": {
-                "automatic_thought": "I only succeeded because I used GPT.",
-                "intermediate_belief": "If I need help, I am not capable.",
-                "core_belief": "I am not capable on my own.",
-                "core_belief_inferred": True,
-                "balanced_thought": (
-                    "Using GPT does not erase my own ideas, "
-                    "judgment, or contribution."
-                ),
-                "current_progress": (
-                    "I can see that using a tool and being capable "
-                    "are not mutually exclusive."
-                ),
-                "next_steps": [
-                    "Write down one part of the project that came from your own judgment.",
-                    "Notice one recent problem you solved without relying entirely on external help.",
-                    "Use GPT as support while checking that you understand the final result.",
-                ],
-            },
-        }
-
-    helper = conversations[conversation_id]
+async def send_message(conversation_id: str, request: MessageRequest):
+    engine = conversations.get(conversation_id)
+    if engine is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if engine.state["phase"] == "complete":
+        raise HTTPException(status_code=400, detail="Conversation is already complete.")
 
     try:
-        result = helper.chat(request.message)
-        print("[FASTAPI RESULT]", result)
-        print("[IS COMPLETE]", helper.is_complete())
+        message = engine.chat(request.message)
+    except Exception as exc:
+        print("[MODEL ERROR] send_message:", exc)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    except Exception as e:
-        print("[MODEL ERROR] send_message:", e)
+    print("[FASTAPI RESULT]", message)
+    print("[PHASE]", engine.state["phase"])
+    return _build_response(conversation_id, engine, message)
 
-        raise HTTPException(
-            status_code=500,
-            detail=str(e),
+
+@app.post("/api/conversations/{conversation_id}/belief-confirmation")
+async def confirm_belief(conversation_id: str, request: BeliefConfirmationRequest):
+    engine = conversations.get(conversation_id)
+    if engine is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if engine.state["phase"] != "belief_confirmation":
+        raise HTTPException(status_code=400, detail="Not waiting for belief confirmation")
+
+    if request.confirmed:
+        engine.state["working_belief_confirmed"] = True
+        engine.state["phase"] = "evidence_form"
+        message = (
+            "Now let’s look at what makes this thought feel true to you. "
+            "Can you share one specific experience, example, or reason that supports it?"
         )
+    else:
+        engine.state["working_belief_confirmed"] = False
+        engine.state["phase"] = "working_belief"
+        message = None
 
-    if helper.is_complete():
-        return {
-            "conversation_id": conversation_id,
-            "stage": "complete",
-            "phase": None,
-            "message": None,
+    return _build_response(conversation_id, engine, message)
 
-            # main result
-            "data": result,
 
-            "stage_complete": True,
-        }
+@app.post("/api/conversations/{conversation_id}/evidence/complete")
+async def complete_evidence_collection(conversation_id: str):
+    engine = conversations.get(conversation_id)
+    if engine is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
 
-    return {
-        "conversation_id": conversation_id,
-        "stage": helper.stage.value,
-        "phase": helper.phase.value,
-        "message": result,
-        "data": None,
-        "stage_complete": False,
-    }
+    try:
+        message = engine.finish_evidence_collection()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return _build_response(conversation_id, engine, message)
+
+
+@app.get("/api/conversations/{conversation_id}/summary")
+async def get_conversation_summary(conversation_id: str):
+    engine = conversations.get(conversation_id)
+    if engine is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if engine.state["phase"] != "complete":
+        raise HTTPException(status_code=400, detail="Conversation is not complete yet")
+
+    try:
+        summary = engine.generate_summary()
+    except Exception as exc:
+        print("[SUMMARY ERROR]", exc)
+        raise HTTPException(status_code=500, detail="Could not generate summary") from exc
+
+    print("[SUMMARY RESULT]", summary)
+    return {"conversation_id": conversation_id, "summary": summary}

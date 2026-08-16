@@ -1,11 +1,9 @@
 import type {
+  BeliefConfirmationRequest,
   ConversationMessageRequest,
-  CTConversationResponse,
-  CTReviewData,
-  DATConversationResponse,
-  OneStepConversationResponse,
+  ConversationResponse,
+  ConversationSummaryResponse,
   StartConversationRequest,
-  UpdateCTReviewRequest,
 } from '@/types/conversation'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
@@ -27,62 +25,41 @@ async function request<T>(path: string, options: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export function startConversation(initialThought: string) {
+export function startConversation(initialThought: string): Promise<ConversationResponse> {
   const body: StartConversationRequest = { initial_thought: initialThought }
 
-  return request<CTConversationResponse>('/api/conversations', {
+  return request<ConversationResponse>('/api/conversations', {
     method: 'POST',
     body: JSON.stringify(body),
   })
 }
 
-export function sendCTMessage(conversationId: string, message: string) {
-  return request<CTConversationResponse>(`/api/conversations/${conversationId}/messages`, {
+export function sendConversationMessage(conversationId: string, message: string): Promise<ConversationResponse> {
+  const body: ConversationMessageRequest = { message }
+
+  return request<ConversationResponse>(`/api/conversations/${conversationId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ message }),
-  })
-}
-
-export function updateCTReview(conversationId: string, data: CTReviewData) {
-  const body: UpdateCTReviewRequest = { data }
-
-  return request<{ success: boolean }>(`/api/conversations/${conversationId}/ct-review`, {
-    method: 'PUT',
     body: JSON.stringify(body),
   })
 }
 
-export function startDAT(conversationId: string, data: CTReviewData) {
-  return request<DATConversationResponse>(`/api/conversations/${conversationId}/dat/start`, {
+export function confirmBelief(conversationId: string, confirmed: boolean): Promise<ConversationResponse> {
+  const body: BeliefConfirmationRequest = { confirmed }
+
+  return request<ConversationResponse>(`/api/conversations/${conversationId}/belief-confirmation`, {
     method: 'POST',
-    body: JSON.stringify({ data }),
+    body: JSON.stringify(body),
   })
 }
 
-export function sendDATMessage(conversationId: string, message: string) {
-  return request<DATConversationResponse>(`/api/conversations/${conversationId}/messages`, {
+export function completeEvidenceCollection(conversationId: string): Promise<ConversationResponse> {
+  return request<ConversationResponse>(`/api/conversations/${conversationId}/evidence/complete`, {
     method: 'POST',
-    body: JSON.stringify({ message }),
   })
 }
 
-
-export function startOneStepConversation(initialThought: string): Promise<OneStepConversationResponse> {
-  const body: StartConversationRequest = {initial_thought: initialThought,}
-
-  return request<OneStepConversationResponse>('/api/conversations',{
-      method: 'POST',
-      body: JSON.stringify(body),
-    }
-  )
-}
-
-export function sendConversationMessage(conversationId: string, message: string): Promise<OneStepConversationResponse> {
-  const body: ConversationMessageRequest = {message,}
-
-  return request<OneStepConversationResponse>(`/api/conversations/${conversationId}/messages`,{
-      method: 'POST',
-      body: JSON.stringify(body),
-    }
-  )
+export function getConversationSummary(conversationId: string): Promise<ConversationSummaryResponse> {
+  return request<ConversationSummaryResponse>(`/api/conversations/${conversationId}/summary`, {
+    method: 'GET',
+  })
 }

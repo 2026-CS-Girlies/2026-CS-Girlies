@@ -1,77 +1,64 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import DustCanvas from '@/components/animation/DustCanvas'
 import ChatPanel from '@/components/chat/ChatPanel'
+import ConfirmationBubble from '@/components/chat/ConfirmationBubble'
+import EvidenceTray from '@/components/chat/EvidenceTray'
 import BottomNav from '@/components/reflection/BottomNav'
 import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
-import ChatBubble from '@/components/chat/ChatBubble'
-import { startOneStepConversation, sendConversationMessage } from '@/services/conversationApi'
-import { tk } from '@/theme/tokens'
+import { conversationPhaseConfig } from '@/config/conversationPhases'
+import { completeEvidenceCollection, confirmBelief, sendConversationMessage } from '@/services/conversationApi'
 import type { Message } from '@/types/chat'
-import type { ModelSummaryData, OneStepConversationResponse } from '@/types/conversation'
+import type { ConversationPhase, ConversationResponse } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
-import DustCanvas from '@/components/animation/DustCanvas'
-
-
-// type Props = {
-//   thought: string
-//   bg: BgConfig
-//   isLight: boolean
-//   onComplete: (conversationId: string, summary: ModelSummaryData) => void
-//   onBack: () => void
-//   onRestart: () => void
-// }
 
 type Props = {
   thought: string
-  initialConversation: OneStepConversationResponse
+  initialConversation: ConversationResponse
   bg: BgConfig
   isLight: boolean
   onBack: () => void
   onRestart: () => void
-  onComplete: (conversationId: string, summary: ModelSummaryData) => void
+  onComplete: (conversationId: string) => void
 }
 
 export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart, initialConversation }: Props) {
-  const [conversationId, setConversationId] = useState<string>(initialConversation.conversation_id)
-  const [messages, setMessages] = useState<Message[]>(()=>{
+  const conversationId = initialConversation.conversation_id
+  const [messages, setMessages] = useState<Message[]>(() => {
     if (!initialConversation.message) return []
     return [{ id: Date.now(), role: 'assistant', text: initialConversation.message }]
   })
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isComplete, setIsComplete] = useState(false)
-  const [summary, setSummary] = useState<ModelSummaryData | null>(null)
+  const [isComplete, setIsComplete] = useState(initialConversation.stage_complete)
   const [error, setError] = useState('')
-  const [menuOpen, setMenuOpen] = useState(false)
-  
   const [leaving, setLeaving] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [phase, setPhase] = useState<ConversationPhase>(initialConversation.phase)
+  const [workingBelief, setWorkingBelief] = useState<string | null>(initialConversation.working_belief)
+  const [evidence, setEvidence] = useState<string[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
-  // const startedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const c = tk(isLight)
+  const phaseConfig = conversationPhaseConfig[phase]
 
-  // Focus input when the page loads and when loading completes
-  useEffect(() => {
-    if (!isLoading && !isComplete) {inputRef.current?.focus()}}, [isLoading, isComplete])
+  const inputDisabled = isLoading || phase === 'belief_confirmation' || phase === 'complete'
 
   useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
-    }
-
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [])
+    if (!inputDisabled) inputRef.current?.focus()
+  }, [inputDisabled])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isLoading])
+  }, [messages, isLoading, phase, evidence])
+
+  const appendAssistantMessage = (message: string | null) => {
+    if (!message) return
+    setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', text: message }])
+  }
 
   const sendMessage = async () => {
     const trimmed = input.trim()
-    if (!trimmed || !conversationId || isLoading || isComplete) return
+    if (!trimmed || inputDisabled) return
 
     setInput('')
     setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: trimmed }])
@@ -81,25 +68,52 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       setError('')
 
       const response = await sendConversationMessage(conversationId, trimmed)
-      const assistantMessage = response.message
 
-      // console.log('[MESSAGE RESPONSE]', response)
+      if (phase === 'evidence_form') setEvidence(prev => [...prev, trimmed])
 
-      if (assistantMessage) {
-        setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', text: assistantMessage }])
-      }
-
-      if (response.stage_complete && response.data) {
-        const summaryData = response.data as ModelSummaryData
-
-        console.log('[SUMMARY]', summaryData)
-
-        setSummary(summaryData)
-        setIsComplete(true)
-        setShowReadyPrompt(true)
-      }
+      appendAssistantMessage(response.message)
+      if (response.working_belief) setWorkingBelief(response.working_belief)
+      setPhase(response.phase)
+      setIsComplete(response.stage_complete)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the message.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const confirmWorkingBelief = async (confirmed: boolean) => {
+    if (isLoading) return
+
+    try {
+      setIsLoading(true)
+      setError('')
+
+      const response = await confirmBelief(conversationId, confirmed)
+      setPhase(response.phase)
+      if (response.working_belief) setWorkingBelief(response.working_belief)
+      appendAssistantMessage(response.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not confirm the thought.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const finishEvidence = async () => {
+    if (isLoading || evidence.length === 0) return
+
+    try {
+      setIsLoading(true)
+      setError('')
+
+      setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: "I'm ready to investigate this evidence" }])
+
+      const response = await completeEvidenceCollection(conversationId)
+      setPhase(response.phase)
+      appendAssistantMessage(response.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not continue the reflection.')
     } finally {
       setIsLoading(false)
     }
@@ -110,12 +124,8 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   }
 
   const goToReflection = () => {
-    if (conversationId && summary && isComplete) {
-      onComplete(conversationId, summary)
-    }
+    if (isComplete) onComplete(conversationId)
   }
-
-  const [showReadyPrompt, setShowReadyPrompt] = useState(false)
 
   return (
     <>
@@ -123,23 +133,36 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
 
       <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-hidden">
         <div className="flex flex-col flex-1 min-h-0" style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'scale(0.96)' : 'scale(1)', filter: leaving ? 'blur(10px)' : 'blur(0)', transition: leaving ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in' : 'none' }}>
-          <StepHeader current="01" total="02" isLight={isLight} onBack={onBack} onRestart={() => setLeaving(true)} className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4" />
+          <StepHeader current={phaseConfig.step} total="04" isLight={isLight} onBack={onBack} onRestart={() => setLeaving(true)} className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4" />
+          <PageIntro isLight={isLight} title={phaseConfig.title} description={phaseConfig.description} className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none" />
 
-          <PageIntro isLight={isLight} title={<>Take a <em>Closer Look</em></>} description="We’ll start with what happened and the thought that came up. Then we’ll look at what makes it feel true — and what it might be leaving out." className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none" />
+          <ChatPanel isLight={isLight} messages={messages} openingThought={thought} input={input} onInputChange={setInput} onSend={() => void sendMessage()} onKeyDown={handleKey} isLoading={isLoading} isComplete={inputDisabled} error={error} placeholder="Write what comes to mind…" bottomRef={bottomRef} inputRef={inputRef}>
+            {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} />}
 
-          <ChatPanel isLight={isLight} messages={messages} openingThought={thought} input={input} onInputChange={setInput} onSend={() => void sendMessage()} onKeyDown={handleKey} isLoading={isLoading} isComplete={isComplete} error={error} placeholder="Write what comes to mind…" bottomRef={bottomRef} inputRef={inputRef}>
-            {showReadyPrompt && (
-              <ChatBubble role="assistant" isLight={isLight}>
-                <p className="text-sm font-medium leading-relaxed">We’ve gathered enough evidence.<br />Ready to build a more balanced view?</p>
-                <div className="flex items-center gap-3 mt-4">
-                  <button onClick={() => { setShowReadyPrompt(false); setIsComplete(false) }} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ color: c.textMuted, border: `1px solid ${c.border}` }}>Not Yet</button>
-                  <button onClick={goToReflection} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ background: c.sendBg, border: `1px solid ${c.sendBorder}`, color: c.text }}>Yes, I’m Ready →</button>
-                </div>
-              </ChatBubble>
+            {phase === 'belief_confirmation' && workingBelief && (
+              <ConfirmationBubble
+                isLight={isLight}
+                message={<>This sounds like the thought that’s been weighing on you.<span className="block mt-2">“{workingBelief}”</span></>}
+                rejectLabel="Not Quite"
+                confirmLabel="Yes, That’s It →"
+                onReject={() => void confirmWorkingBelief(false)}
+                onConfirm={() => void confirmWorkingBelief(true)}
+              />
+            )}
+
+            {isComplete && (
+              <ConfirmationBubble
+                isLight={isLight}
+                message={<>You’ve finished looking at this thought.<br />Ready to see your reflection?</>}
+                rejectLabel="Not Yet"
+                confirmLabel="See My Reflection →"
+                onReject={() => setIsComplete(false)}
+                onConfirm={goToReflection}
+              />
             )}
           </ChatPanel>
 
-          <BottomNav isLight={isLight} onBack={onBack} backLabel="HOME" onNext={goToReflection} nextLabel="SEE MY REFLECTION" nextDisabled={!isComplete || !summary || !conversationId} />
+          <BottomNav isLight={isLight} onBack={onBack} backLabel="HOME" onNext={goToReflection} nextLabel="SEE MY REFLECTION" nextDisabled={!isComplete} />
         </div>
       </ReflectionShell>
     </>
