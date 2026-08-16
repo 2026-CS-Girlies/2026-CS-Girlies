@@ -110,7 +110,7 @@ export type ConversationPhase =
   | 'verdict_confirmation'
   | 'complete'
 
-  
+
 export type BeliefConfirmationRequest = {
   confirmed: boolean
 }
@@ -120,4 +120,5 @@ export type BeliefConfirmationResponse = {
   phase: ConversationPhase
   working_belief: string | null
   confirmed: boolean
+  message: string | null
 }

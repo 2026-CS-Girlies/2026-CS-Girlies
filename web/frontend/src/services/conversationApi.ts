@@ -106,3 +106,14 @@ export function confirmBelief(
     },
   )
 }
+
+export function completeEvidenceCollection(
+  conversationId: string,
+): Promise<OneStepConversationResponse> {
+  return request<OneStepConversationResponse>(
+    `/api/conversations/${conversationId}/evidence/complete`,
+    {
+      method: 'POST',
+    },
+  )
+}

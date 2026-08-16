@@ -5,13 +5,14 @@ import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
 import ConfirmationBubble from '@/components/chat/ConfirmationBubble'
-import { sendConversationMessage, confirmBelief } from '@/services/conversationApi'
+import { sendConversationMessage, confirmBelief, completeEvidenceCollection } from '@/services/conversationApi'
 import { tk } from '@/theme/tokens'
 import type { Message } from '@/types/chat'
 import type { ConversationPhase, ModelSummaryData, OneStepConversationResponse } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
 import { conversationPhaseConfig } from '@/config/conversationPhases'
 import DustCanvas from '@/components/animation/DustCanvas'
+import EvidenceTray from '@/components/chat/EvidenceTray'
 
 
 // type Props = {
@@ -57,10 +58,12 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   const phaseConfig = conversationPhaseConfig[phase]
   const [workingBelief, setWorkingBelief] = useState<string | null>(initialConversation.working_belief ?? null)
   const [balancedThought, setBalancedThought] = useState<string | null>(initialConversation.balanced_thought ?? null)
+  const [evidence, setEvidence] = useState<string[]>([])
+  const [evidenceMessage, setEvidenceMessage] = useState<string | null>(null)
+
 
   const inputDisabled = isLoading ||
                         phase === 'belief_confirmation' ||
-                        phase === 'evidence_form' ||
                         phase === 'verdict_confirmation' ||
                         phase === 'complete'
 
@@ -94,16 +97,28 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       setError('')
 
       const response = await sendConversationMessage(conversationId, trimmed)
-      setPhase(response.phase)
+      
+      if (phase === 'evidence_form') {
+        setEvidence(prev => [...prev, trimmed])
+      }
+
+      const assistantMessage = response.message
+
+      if (assistantMessage) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: 'assistant',
+            text: assistantMessage,
+          },
+        ])
+      }
 
       if (response.working_belief) setWorkingBelief(response.working_belief)
       if (response.balanced_thought) setBalancedThought(response.balanced_thought)
       
-      const assistantMessage = response.message
-
-      if (assistantMessage) {
-        setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', text: assistantMessage }])
-      }
+      setPhase(response.phase)
 
       if (response.stage_complete && response.data) {
         const summaryData = response.data as ModelSummaryData
@@ -137,6 +152,19 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       if (response.working_belief) {
         setWorkingBelief(response.working_belief)
       }
+
+      const assistantMessage = response.message
+
+      if (assistantMessage) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now(),
+            role: 'assistant',
+            text: assistantMessage,
+          },
+        ])
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -158,6 +186,29 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
     }
   }
 
+  const finishEvidence = async () => {
+    if (!conversationId || isLoading || evidence.length === 0) return
+
+    try {
+      setIsLoading(true)
+      setError('')
+
+      const response = await completeEvidenceCollection(
+        conversationId,
+      )
+
+      setPhase(response.phase)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not finish evidence collection.',
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   console.log('[INITIAL CONVERSATION]', initialConversation)
   console.log('[INITIAL PHASE]', initialConversation.phase)
   console.log('[INITIAL BELIEF]', initialConversation.working_belief)
@@ -175,6 +226,15 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
 
           <ChatPanel isLight={isLight} messages={messages} openingThought={thought} input={input} onInputChange={setInput} onSend={() => void sendMessage()} onKeyDown={handleKey} isLoading={isLoading} isComplete={inputDisabled} error={error} placeholder="Write what comes to mind…" bottomRef={bottomRef} inputRef={inputRef}>
             
+            {phase === 'evidence_form' && (
+              <EvidenceTray
+                evidence={evidence}
+                isLight={isLight}
+                isLoading={isLoading}
+                onComplete={() => void finishEvidence()}
+                message={evidenceMessage}
+              />
+            )}
             {phase === 'belief_confirmation' && workingBelief && (
               <ConfirmationBubble
                 isLight={isLight}
