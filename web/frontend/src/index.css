@@ -30,3 +30,82 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ─── Reflection transitions ─────────────────────────────────────────────── */
+@keyframes ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.04);
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes echo-drift {
+  0% {
+    transform: translate(-50%, -50%) scale(0.98);
+    opacity: 0;
+    filter: blur(0px);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes thought-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.96);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes thought-out {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.04);
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes caption-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reflection-transition-content {
+    transition-duration: 0.01ms !important;
+  }
+}

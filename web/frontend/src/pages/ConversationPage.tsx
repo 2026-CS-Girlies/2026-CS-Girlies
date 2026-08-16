@@ -10,6 +10,8 @@ import { tk } from '@/theme/tokens'
 import type { Message } from '@/types/chat'
 import type { ModelSummaryData, OneStepConversationResponse } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
+import DustCanvas from '@/components/animation/DustCanvas'
+
 
 // type Props = {
 //   thought: string
@@ -43,7 +45,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   const [error, setError] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   
-
+  const [leaving, setLeaving] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   // const startedRef = useRef(false)
@@ -53,40 +55,6 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   // Focus input when the page loads and when loading completes
   useEffect(() => {
     if (!isLoading && !isComplete) {inputRef.current?.focus()}}, [isLoading, isComplete])
-
-  // useEffect(() => {
-  //   if (startedRef.current) return
-  //   startedRef.current = true
-
-  //   const begin = async () => {
-  //     try {
-  //       setIsLoading(true)
-  //       setError('')
-
-  //       const response = await startOneStepConversation(thought)
-  //       // console.log('[START RESPONSE]', response)
-  //       setConversationId(response.conversation_id)
-
-  //       const assistantMessage = response.message
-  //       if (assistantMessage) {
-  //         setMessages([{ id: Date.now(), role: 'assistant', text: assistantMessage }])
-  //       }
-
-  //       if (response.stage_complete && response.data) {
-  //         setSummary(response.data)
-  //         setIsComplete(true)
-  //         onComplete(response.conversation_id, response.data)
-  //         return
-
-  //       }
-  //     } catch (err) {
-  //       setError(err instanceof Error ? err.message : 'Could not start the conversation.')
-  //     } finally {
-  //       setIsLoading(false)
-  //     }
-  //   }
-  //   void begin()
-  // }, [thought])
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -150,21 +118,30 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   const [showReadyPrompt, setShowReadyPrompt] = useState(false)
 
   return (
-    <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-hidden">
-      <StepHeader current="01" total="02" isLight={isLight} onBack={onBack} onRestart={onRestart} className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4" />
-      <PageIntro isLight={isLight} title={<>Take a <em>Closer Look</em></>} description="We’ll start with what happened and the thought that came up. Then we’ll look at what makes it feel true — and what it might be leaving out." className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none" />
-      <ChatPanel isLight={isLight} messages={messages} openingThought={thought} input={input} onInputChange={setInput} onSend={() => void sendMessage()} onKeyDown={handleKey} isLoading={isLoading} isComplete={isComplete} error={error} placeholder="Write what comes to mind…" bottomRef={bottomRef} inputRef={inputRef}>
-        {showReadyPrompt && (
-          <ChatBubble role="assistant" isLight={isLight}>
-            <p className="text-sm font-medium leading-relaxed">We’ve gathered enough evidence.<br />Ready to build a more balanced view?</p>
-            <div className="flex items-center gap-3 mt-4">
-              <button onClick={() => { setShowReadyPrompt(false); setIsComplete(false) }} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ color: c.textMuted, border: `1px solid ${c.border}` }}>Not Yet</button>
-              <button onClick={goToReflection} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ background: c.sendBg, border: `1px solid ${c.sendBorder}`, color: c.text }}>Yes, I’m Ready →</button>
-            </div>
-          </ChatBubble>
-        )}
-      </ChatPanel>
-      <BottomNav isLight={isLight} onBack={onBack} backLabel="HOME" onNext={goToReflection} nextLabel="SEE MY REFLECTION" nextDisabled={!isComplete || !summary || !conversationId} />
-    </ReflectionShell>
+    <>
+      {leaving && <DustCanvas isLight={isLight} onDone={onRestart} />}
+
+      <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0" style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'scale(0.96)' : 'scale(1)', filter: leaving ? 'blur(10px)' : 'blur(0)', transition: leaving ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in' : 'none' }}>
+          <StepHeader current="01" total="02" isLight={isLight} onBack={onBack} onRestart={() => setLeaving(true)} className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4" />
+
+          <PageIntro isLight={isLight} title={<>Take a <em>Closer Look</em></>} description="We’ll start with what happened and the thought that came up. Then we’ll look at what makes it feel true — and what it might be leaving out." className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none" />
+
+          <ChatPanel isLight={isLight} messages={messages} openingThought={thought} input={input} onInputChange={setInput} onSend={() => void sendMessage()} onKeyDown={handleKey} isLoading={isLoading} isComplete={isComplete} error={error} placeholder="Write what comes to mind…" bottomRef={bottomRef} inputRef={inputRef}>
+            {showReadyPrompt && (
+              <ChatBubble role="assistant" isLight={isLight}>
+                <p className="text-sm font-medium leading-relaxed">We’ve gathered enough evidence.<br />Ready to build a more balanced view?</p>
+                <div className="flex items-center gap-3 mt-4">
+                  <button onClick={() => { setShowReadyPrompt(false); setIsComplete(false) }} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ color: c.textMuted, border: `1px solid ${c.border}` }}>Not Yet</button>
+                  <button onClick={goToReflection} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ background: c.sendBg, border: `1px solid ${c.sendBorder}`, color: c.text }}>Yes, I’m Ready →</button>
+                </div>
+              </ChatBubble>
+            )}
+          </ChatPanel>
+
+          <BottomNav isLight={isLight} onBack={onBack} backLabel="HOME" onNext={goToReflection} nextLabel="SEE MY REFLECTION" nextDisabled={!isComplete || !summary || !conversationId} />
+        </div>
+      </ReflectionShell>
+    </>
   )
 }

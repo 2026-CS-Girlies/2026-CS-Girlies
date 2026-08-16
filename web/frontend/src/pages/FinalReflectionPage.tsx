@@ -72,39 +72,29 @@ export default function FinalReflectionPage({ ctReview, result, modelSummary, bg
     URL.revokeObjectURL(url)
   }
 
-return (
-  <>
-    {leaving && <DustCanvas isLight={isLight} onDone={onRestart} />}
+  return (
+    <>
+      {leaving && <DustCanvas isLight={isLight} onDone={onRestart} />}
 
-    <div
-      style={{
-        opacity: leaving ? 0 : 1,
-        filter: leaving ? 'blur(12px)' : 'blur(0)',
-        transition: leaving
-          ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in'
-          : 'none',
-      }}
-    >
       <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-auto px-5 md:px-8 py-6">
-        <StepHeader current={currentStep} total={totalSteps} isLight={isLight} onRestart={() => setLeaving(true)} restartLabel="START A NEW REFLECTION" className="pb-4" />
+        <div style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'scale(0.96)' : 'scale(1)', filter: leaving ? 'blur(10px)' : 'blur(0)', transition: leaving ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in' : 'none' }}>
+          <StepHeader current={currentStep} total={totalSteps} isLight={isLight} onRestart={() => setLeaving(true)} restartLabel="START A NEW REFLECTION" className="pb-4" />
 
-        <div className="relative z-10 w-full max-w-[900px] mx-auto flex flex-col items-center gap-6 md:gap-8 pb-8">
-          <PageIntro isLight={isLight} title="A Clearer View" description="You examined the thought from more than one side. Here’s the perspective you arrived at." maxWidth="max-w-xl" />
+          <div className="relative z-10 w-full max-w-[900px] mx-auto flex flex-col items-center gap-6 md:gap-8 pb-8">
+            <PageIntro isLight={isLight} title="A Clearer View" description="You examined the thought from more than one side. Here’s the perspective you arrived at." maxWidth="max-w-xl" />
 
-          <ContentCard isLight={isLight}>
-            {items.map(([label, value]) => <ReflectionField key={label} label={label} value={value} isLight={isLight} />)}
-            <p className="text-sm text-center pt-2" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>
-              This reflection belongs to you. Keep what feels useful and revise anything that doesn’t.
-            </p>
-          </ContentCard>
+            <ContentCard isLight={isLight}>
+              {items.map(([label, value]) => <ReflectionField key={label} label={label} value={value} isLight={isLight} />)}
+              <p className="text-sm text-center pt-2" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>This reflection belongs to you. Keep what feels useful and revise anything that doesn’t.</p>
+            </ContentCard>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <ActionButton variant="light" onClick={onBack}>← Back</ActionButton>
-            <ActionButton onClick={handleDownload}>Download Reflection</ActionButton>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <ActionButton variant="light" onClick={onBack}>← Back</ActionButton>
+              <ActionButton onClick={handleDownload}>Download Reflection</ActionButton>
+            </div>
           </div>
         </div>
       </ReflectionShell>
-    </div>
-  </>
-)
+    </>
+  )
 }
