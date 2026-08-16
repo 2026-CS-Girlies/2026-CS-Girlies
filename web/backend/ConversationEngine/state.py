@@ -2,10 +2,9 @@ from typing import TypedDict
 
 
 class StillTrueState(TypedDict, total=False):
-
     phase: str
 
-    # Working belief conversation
+    # Working belief
     working_belief_messages: list
     initial_thought: str
     working_belief: str | None
@@ -22,7 +21,3 @@ class StillTrueState(TypedDict, total=False):
     # Verdict
     verdict_messages: list
     balanced_thought: str | None
-    verdict_confirmed: bool
-
-    # Frontend
-    reply: str

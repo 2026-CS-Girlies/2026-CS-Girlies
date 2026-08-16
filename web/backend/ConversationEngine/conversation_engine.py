@@ -22,8 +22,6 @@ class ConversationEngine:
             "evidence_reviews": [],
             "verdict_messages": [],
             "balanced_thought": None,
-            "verdict_confirmed": False,
-            "reply": "",
         }
 
     def chat(self, user_message: str) -> str:
@@ -42,23 +40,36 @@ class ConversationEngine:
 
     def _handle_working_belief_phase(self, user_message: str) -> str:
         history = self.state["working_belief_messages"]
-        messages = working_belief_prompt.invoke({"history": history, "user_message": user_message}).to_messages()
-        result = working_belief_llm.with_structured_output(WorkingBeliefExtraction).invoke(messages)
+
+        prompt_input = {
+            "history": history,
+            "user_message": user_message,
+            "initial_thought": self.state.get("initial_thought", ""),
+            "working_belief": self.state.get("working_belief") or "",
+        }
+
+        messages = working_belief_prompt.invoke(prompt_input).to_messages()
+
+        result = working_belief_llm.with_structured_output(
+            WorkingBeliefExtraction
+        ).invoke(messages)
 
         if result.working_belief is not None:
             self.state["working_belief"] = result.working_belief
+
         if result.belief_clear:
             self.state["phase"] = "belief_confirmation"
 
         assistant_message = (result.message or "").strip()
+
         if not result.belief_clear and not assistant_message:
             assistant_message = "What thought or feeling would you like to look at?"
 
         history.append(HumanMessage(content=user_message))
+
         if assistant_message:
             history.append(AIMessage(content=assistant_message))
 
-        self.state["reply"] = assistant_message
         return assistant_message
 
     def _handle_evidence_form_phase(self, user_message: str) -> str:
@@ -68,13 +79,12 @@ class ConversationEngine:
 
         self.state["evidence_for"].append(evidence)
         evidence_count = len(self.state["evidence_for"])
-        assistant_message = (
+
+        return (
             "That can be one piece of it. Is there anything else you'd want to include?"
             if evidence_count == 1
             else "Got it. Anything else you'd like to include?"
         )
-        self.state["reply"] = assistant_message
-        return assistant_message
 
     def finish_evidence_collection(self) -> str:
         if self.state["phase"] != "evidence_form":
@@ -99,32 +109,42 @@ class ConversationEngine:
 
         index = self.state["evidence_index"]
         label = "first" if index == 0 else "next"
+
         assistant_message = (
             f"Let’s take a closer look at the {label} one:\n\n"
             f"“{evidence}”\n\n"
             f"What about this experience makes “{self.state['working_belief']}” feel true?"
         )
-        self.state["evidence_review_messages"] = [AIMessage(content=assistant_message)]
-        self.state["reply"] = assistant_message
+
+        self.state["evidence_review_messages"] = [
+            AIMessage(content=assistant_message)
+        ]
+
         return assistant_message
 
     def _handle_evidence_review_phase(self, user_message: str) -> str:
         evidence = self._current_evidence()
+
         if evidence is None:
             self.state["phase"] = "verdict"
             return self._start_verdict()
 
         history = self.state["evidence_review_messages"]
+
         prompt_input = {
             "history": history,
             "user_message": user_message,
             "working_belief": self.state["working_belief"],
             "current_evidence": evidence,
-            "evidence_for": self.state["evidence_for"],
         }
 
-        assistant_message = crispers_llm.invoke(evidence_review_prompt.invoke(prompt_input).to_messages()).content
-        extraction = extractor_llm.with_structured_output(EvidenceReviewExtraction).invoke(
+        assistant_message = crispers_llm.invoke(
+            evidence_review_prompt.invoke(prompt_input).to_messages()
+        ).content
+
+        extraction = extractor_llm.with_structured_output(
+            EvidenceReviewExtraction
+        ).invoke(
             evidence_review_extraction_prompt.invoke(prompt_input).to_messages()
         )
 
@@ -138,6 +158,7 @@ class ConversationEngine:
                 "what_it_does_not_support": extraction.what_it_does_not_support,
                 "alternative_explanation": extraction.alternative_explanation,
             })
+
             self.state["evidence_index"] += 1
 
             if self.state["evidence_index"] < len(self.state["evidence_for"]):
@@ -146,7 +167,6 @@ class ConversationEngine:
             self.state["phase"] = "verdict"
             return self._start_verdict()
 
-        self.state["reply"] = assistant_message
         return assistant_message
 
     def _start_verdict(self) -> str:
@@ -155,12 +175,16 @@ class ConversationEngine:
             "Now, considering what it supports and what it may leave out, "
             "what would be a more balanced way to describe this thought?"
         )
-        self.state["verdict_messages"] = [AIMessage(content=assistant_message)]
-        self.state["reply"] = assistant_message
+
+        self.state["verdict_messages"] = [
+            AIMessage(content=assistant_message)
+        ]
+
         return assistant_message
 
     def _handle_verdict_phase(self, user_message: str) -> str:
         history = self.state["verdict_messages"]
+
         prompt_input = {
             "history": history,
             "user_message": user_message,
@@ -168,20 +192,25 @@ class ConversationEngine:
             "evidence_reviews": self.state["evidence_reviews"],
         }
 
-        assistant_message = crispers_llm.invoke(verdict_prompt.invoke(prompt_input).to_messages()).content
-        extraction = extractor_llm.with_structured_output(VerdictExtraction).invoke(
+        assistant_message = crispers_llm.invoke(
+            verdict_prompt.invoke(prompt_input).to_messages()
+        ).content
+
+        extraction = extractor_llm.with_structured_output(
+            VerdictExtraction
+        ).invoke(
             verdict_extraction_prompt.invoke(prompt_input).to_messages()
         )
 
         if extraction.balanced_thought:
             self.state["balanced_thought"] = extraction.balanced_thought
+
         if extraction.verdict_confirmed:
-            self.state["verdict_confirmed"] = True
             self.state["phase"] = "complete"
 
         history.append(HumanMessage(content=user_message))
         history.append(AIMessage(content=assistant_message))
-        self.state["reply"] = assistant_message
+
         return assistant_message
 
     def generate_summary(self) -> dict:
@@ -208,6 +237,9 @@ Return these fields:
 - balanced_thought: preserve the final balanced thought as closely as possible.
 """.strip()
 
-        result = extractor_llm.with_structured_output(FinalSummaryExtraction).invoke(prompt)
+        result = extractor_llm.with_structured_output(
+            FinalSummaryExtraction
+        ).invoke(prompt)
+
         print("[FINAL SUMMARY RESULT]", result)
         return result.model_dump()
