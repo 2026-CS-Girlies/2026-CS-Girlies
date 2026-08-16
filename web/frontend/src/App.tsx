@@ -9,15 +9,23 @@ import SecondConversationPage from './pages/SecondConversationPage'
 import FinalReflectionPage from './pages/FinalReflectionPage'
 import HowItWorksPage from './pages/HowItWorksPage'
 import ConversationPage from './pages/ConversationPage'
-
+import ReceivingScreen from './pages/ReceivingPage'
 
 import { hexLuminance, measureImageBrightness } from './theme/background'
 import type { CTReviewData, FinalReflectionData, ModelSummaryData} from './types/conversation'
 import type { Screen } from './types/navigation'
 import type { BgConfig, SoundId, ThemeId } from './types/theme'
+import type { OneStepConversationResponse } from './types/conversation'
+import { startOneStepConversation } from './services/conversationApi'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing')
+
+  // Moedl loading state
+  const [conversationStart, setConversationStart] = useState<OneStepConversationResponse | null>(null) // first model response
+  const [receivingFinished, setReceivingFinished] = useState(false) // whether the animation is finished
+  const [isConversationStarting, setIsConversationStarting] = useState(false) // is waiting moel
+  const [conversationStartError, setConversationStartError] = useState<string | null>(null) // api request success
 
   // Reflection state shared across pages
   const [thought, setThought] = useState('')
@@ -45,6 +53,44 @@ export default function App() {
       measureImageBrightness(bg.url).then(l => setIsLight(l > 0.5))
     }
   }, [bg])
+
+  useEffect(() => {
+    if (screen === 'receiving' && receivingFinished && conversationStart) {
+      setScreen('conversation')}
+    }, [
+      screen,
+      receivingFinished,
+      conversationStart,
+    ])
+
+  const beginReflection = async (newThought: string) => {
+    setThought(newThought)
+
+    // last conversation
+    setConversationStart(null)
+    setConversationStartError(null)
+    setReceivingFinished(false)
+
+    // Receiving
+    setScreen('receiving')
+
+    // backend / model request
+    setIsConversationStarting(true)
+
+    try {
+      const response = await startOneStepConversation(newThought)
+      setConversationStart(response)
+    } catch (err) {
+      setConversationStartError(
+        err instanceof Error
+          ? err.message
+          : 'Could not start the conversation.',
+      )
+    } finally {
+      setIsConversationStarting(false)
+    }
+  }
+
 
   const restart = () => {
     setThought('')
@@ -79,22 +125,28 @@ export default function App() {
             isLight={isLight}
             soundId={soundId}
             onSoundChange={setSoundId}
-            onBegin={value => {
-              setThought(value)
-              // setScreen('firstConversation')
-              setScreen('conversation')
-            }}
+            onBegin={beginReflection}
             onHowItWorks={() => setScreen('howItWorks')}
             activeThemeId={activeThemeId}
             onThemeId={setActiveThemeId}
           />
         </>
       )}
+    
+      {screen === 'receiving' && (
+      <ReceivingScreen
+        thought={thought}
+        bg={bg}
+        isLight={isLight}
+        onComplete={() => setReceivingFinished(true)}
+      />
+    )}
 
       {/* One Conversation Page */}
-      {screen === 'conversation' && (
+      {screen === 'conversation' && conversationStart && (
         <ConversationPage
           thought={thought}
+          initialConversation={conversationStart}
           bg={bg}
           isLight={isLight}
           onComplete={(id, summary) => {

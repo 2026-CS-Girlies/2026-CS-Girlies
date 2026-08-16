@@ -1,86 +1,60 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { RotateCcw } from 'lucide-react'
-import SendIcon from '@/components/common/SendIcon'
+import ChatPanel from '@/components/chat/ChatPanel'
+import BottomNav from '@/components/reflection/BottomNav'
+import PageIntro from '@/components/reflection/PageIntro'
+import ReflectionShell from '@/components/reflection/ReflectionShell'
+import StepHeader from '@/components/reflection/StepHeader'
+import ChatBubble from '@/components/chat/ChatBubble'
 import { startOneStepConversation, sendConversationMessage } from '@/services/conversationApi'
-import { bgStyle } from '@/theme/background'
 import { tk } from '@/theme/tokens'
 import type { Message } from '@/types/chat'
-import type { ModelSummaryData } from '@/types/conversation'
+import type { ModelSummaryData, OneStepConversationResponse } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
+import DustCanvas from '@/components/animation/DustCanvas'
+
+
+// type Props = {
+//   thought: string
+//   bg: BgConfig
+//   isLight: boolean
+//   onComplete: (conversationId: string, summary: ModelSummaryData) => void
+//   onBack: () => void
+//   onRestart: () => void
+// }
 
 type Props = {
   thought: string
+  initialConversation: OneStepConversationResponse
   bg: BgConfig
   isLight: boolean
-  onComplete: (conversationId: string, summary: ModelSummaryData) => void
   onBack: () => void
   onRestart: () => void
+  onComplete: (conversationId: string, summary: ModelSummaryData) => void
 }
 
-export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart }: Props) {
-  const [conversationId, setConversationId] = useState<string | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
+export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart, initialConversation }: Props) {
+  const [conversationId, setConversationId] = useState<string>(initialConversation.conversation_id)
+  const [messages, setMessages] = useState<Message[]>(()=>{
+    if (!initialConversation.message) return []
+    return [{ id: Date.now(), role: 'assistant', text: initialConversation.message }]
+  })
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [summary, setSummary] = useState<ModelSummaryData | null>(null)
   const [error, setError] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   
-
+  const [leaving, setLeaving] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const startedRef = useRef(false)
+  // const startedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const c = tk(isLight)
 
   // Focus input when the page loads and when loading completes
   useEffect(() => {
-    if (!isLoading && !isComplete) {
-      inputRef.current?.focus()
-    }
-  }, [isLoading, isComplete])
-
-  useEffect(() => {
-    if (startedRef.current) return
-    startedRef.current = true
-
-    const begin = async () => {
-      try {
-        setIsLoading(true)
-        setError('')
-
-        const response = await startOneStepConversation(thought)
-
-        console.log('[START RESPONSE]', response)
-
-        setConversationId(response.conversation_id)
-
-        const assistantMessage = response.message
-
-
-        if (assistantMessage) {
-          setMessages([{ id: Date.now(), role: 'assistant', text: assistantMessage }])
-        }
-
-        if (response.stage_complete && response.data) {
-          setSummary(response.data)
-          setIsComplete(true)
-
-          onComplete(response.conversation_id, response.data)
-
-          return
-
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not start the conversation.')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    void begin()
-  }, [thought])
+    if (!isLoading && !isComplete) {inputRef.current?.focus()}}, [isLoading, isComplete])
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -144,107 +118,30 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   const [showReadyPrompt, setShowReadyPrompt] = useState(false)
 
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden transition-all duration-500" style={bgStyle(bg)}>
-      {bg.type === 'image' && <div className="absolute inset-0 pointer-events-none" style={{ background: c.imgOverlay }} />}
+    <>
+      {leaving && <DustCanvas isLight={isLight} onDone={onRestart} />}
 
-      {/* Top bar */}
-      <div className="relative z-10 flex items-center justify-between px-5 md:px-8 pt-6 md:pt-8 pb-3 md:pb-4 flex-none gap-2">
-        <div className="flex items-baseline gap-1" style={{ fontFamily: 'In, serif' }}>
-          <span className="text-[24px] md:text-[32px]" style={{ color: c.text }}>01</span>
-          <span className="text-[18px] md:text-[24px]" style={{ color: c.textFaint }}> / </span>
-          <span className="text-[14px] md:text-[18px]" style={{ color: c.textFaint }}>02</span>
-        </div>
+      <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0" style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'scale(0.96)' : 'scale(1)', filter: leaving ? 'blur(10px)' : 'blur(0)', transition: leaving ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in' : 'none' }}>
+          <StepHeader current="01" total="02" isLight={isLight} onBack={onBack} onRestart={() => setLeaving(true)} className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4" />
 
-        <button onClick={onRestart} className="hidden md:flex gap-2 text-sm hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>
-          <RotateCcw size={18} /> RESET CONVERSATION
-        </button>
+          <PageIntro isLight={isLight} title={<>Take a <em>Closer Look</em></>} description="We’ll start with what happened and the thought that came up. Then we’ll look at what makes it feel true — and what it might be leaving out." className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none" />
 
-        <div className="relative md:hidden" ref={menuRef}>
-          <button onClick={() => setMenuOpen(o => !o)} className="w-8 h-8 flex flex-col items-center justify-center gap-[5px] rounded-full" style={{ background: menuOpen ? c.inputBg : 'transparent' }}>
-            {[0, 1, 2].map(i => <span key={i} className="block w-[3px] h-[3px] rounded-full" style={{ background: c.textMuted }} />)}
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 top-10 w-48 rounded-2xl overflow-hidden z-30 flex flex-col" style={{ background: isLight ? 'rgba(255,255,255,0.97)' : 'rgba(28,28,28,0.97)', border: `1px solid ${c.border}` }}>
-              <button onClick={() => { setMenuOpen(false); onBack() }} className="text-left px-5 py-3.5 text-sm" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>← Back</button>
-              <button onClick={() => { setMenuOpen(false); onRestart() }} className="text-left px-5 py-3.5 text-sm text-[#ff6b6b]" style={{ fontFamily: 'Fragment Mono, monospace' }}>↺ Start Over</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="px-5 md:px-8 pt-5 md:pt-6 pb-4 md:pb-5 flex-none">
-        <h1 className="text-[clamp(20px,3.5vw,44px)] leading-tight text-center" style={{ fontFamily: 'Libre Baskerville, serif', color: c.textOnCard }}>
-          Take a <em>Closer Look</em>
-        </h1>
-        <p className="text-xs md:text-sm text-center mt-2 max-w-lg mx-auto" style={{ fontFamily: 'Inter, sans-serif', color: c.textMuted }}>
-          We’ll start with what happened and the thought that came up. Then we’ll look at what makes it feel true — and what it might be leaving out.
-        </p>
-      </div>
-
-      {/* Chat panel */}
-      <div className="relative z-10 flex-1 flex flex-col mx-3 md:mx-6 mb-3 md:mb-5 rounded-[24px] overflow-hidden" style={{ background: c.panelBg, border: `1px solid ${c.border}`, backdropFilter: 'blur(28px) saturate(1.4)', boxShadow: c.panelShadow }}>
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 flex flex-col gap-3 md:gap-4">
-          <div className="self-end max-w-[85%] md:max-w-[75%]">
-            <div className="rounded-tl-[18px] rounded-tr-[18px] rounded-bl-[18px] px-4 py-3 text-sm" style={{ fontFamily: 'Inter, sans-serif', background: c.userBubbleBg, border: `1px solid ${c.userBubbleBorder}`, color: c.userBubbleText }}>
-              <p className="font-medium">"{thought}"</p>
-            </div>
-          </div>
-
-          {messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className="max-w-[85%] md:max-w-[75%] px-4 py-3 text-sm rounded-[18px]" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, ...(msg.role === 'assistant' ? { background: c.asstBubbleBg, border: `1px solid ${c.asstBubbleBorder}`, color: c.asstBubbleText } : { background: c.userBubbleBg, border: `1px solid ${c.userBubbleBorder}`, color: c.userBubbleText }) }}>
-                {msg.text}
-              </div>
-            </div>
-          ))}
-
-          {showReadyPrompt && (
-            <div className="flex justify-start">
-              <div className="max-w-[85%] md:max-w-[75%] px-5 py-4 rounded-[18px]" style={{ fontFamily: 'Inter, sans-serif', background: c.asstBubbleBg, border: `1px solid ${c.asstBubbleBorder}`, color: c.asstBubbleText }}>
+          <ChatPanel isLight={isLight} messages={messages} openingThought={thought} input={input} onInputChange={setInput} onSend={() => void sendMessage()} onKeyDown={handleKey} isLoading={isLoading} isComplete={isComplete} error={error} placeholder="Write what comes to mind…" bottomRef={bottomRef} inputRef={inputRef}>
+            {showReadyPrompt && (
+              <ChatBubble role="assistant" isLight={isLight}>
                 <p className="text-sm font-medium leading-relaxed">We’ve gathered enough evidence.<br />Ready to build a more balanced view?</p>
                 <div className="flex items-center gap-3 mt-4">
-                  <button onClick={() => {setShowReadyPrompt(false); setIsComplete(false)}} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ color: c.textMuted, border: `1px solid ${c.border}` }}>Not Yet</button>
+                  <button onClick={() => { setShowReadyPrompt(false); setIsComplete(false) }} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ color: c.textMuted, border: `1px solid ${c.border}` }}>Not Yet</button>
                   <button onClick={goToReflection} className="text-sm px-4 py-2 rounded-full hover:opacity-80" style={{ background: c.sendBg, border: `1px solid ${c.sendBorder}`, color: c.text }}>Yes, I’m Ready →</button>
                 </div>
-              </div>
-            </div>
-          )}
+              </ChatBubble>
+            )}
+          </ChatPanel>
 
-          {isLoading && <div className="text-sm" style={{ color: c.textMuted }}>Thinking…</div>}
-          {error && <div className="text-sm text-[#ff6b6b]">{error}</div>}
-          <div ref={bottomRef} />
+          <BottomNav isLight={isLight} onBack={onBack} backLabel="HOME" onNext={goToReflection} nextLabel="SEE MY REFLECTION" nextDisabled={!isComplete || !summary || !conversationId} />
         </div>
-
-        {/* Input */}
-        <div className="px-4 md:px-8 pt-3 pb-2 flex-none" style={{ borderTop: `1px solid ${c.divider}` }}>
-          <div className="flex items-center gap-3 rounded-2xl px-4 py-2.5 md:py-3" style={{ background: c.inputBg, border: `1px solid ${c.inputBorder}` }}>
-            <input
-              ref={inputRef}
-              className="flex-1 text-sm outline-none bg-transparent min-w-0"
-              style={{ fontFamily: 'Inter, sans-serif', color: c.inputText }}
-              placeholder={isComplete ? 'Ready for your reflection' : 'Write what comes to mind…'}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              disabled={isLoading || isComplete}
-            />
-            <button onClick={() => void sendMessage()} disabled={isLoading || isComplete} className="w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-40" style={{ background: c.sendBg, border: `1px solid ${c.sendBorder}` }}>
-              <SendIcon color={isLight ? '#444' : '#BBBBBB'} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom nav */}
-      <div className="px-4 md:px-8 pt-2 pb-4 flex-none flex items-center justify-between">
-        <button onClick={onBack} className="hidden md:block text-sm hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>← HOME</button>
-        <div className="md:hidden" />
-        <button onClick={goToReflection} disabled={!isComplete || !summary || !conversationId} className="text-sm disabled:opacity-30 hover:opacity-80" style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}>
-          SEE MY REFLECTION →
-        </button>
-      </div>
-    </div>
+      </ReflectionShell>
+    </>
   )
 }
