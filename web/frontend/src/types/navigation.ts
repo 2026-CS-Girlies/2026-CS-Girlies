@@ -1,10 +1,6 @@
 export type Screen =
   | 'landing'
   | 'receiving'
-  | 'firstConversation'
-  | 'review'
-  | 'secondConversation'
+  | 'conversation'
   | 'finalReflection'
   | 'howItWorks'
-  | 'conversation'
-//   | 'privacy'

@@ -1,49 +1,28 @@
 import { useEffect, useState } from 'react'
 import NavBar from './components/layout/NavBar'
 import { useAmbientSound } from './hooks/useAmbientSound'
-
-import LandingPage from './pages/LandingPage'
-import FirstConversationPage from './pages/FirstConversationPage'
-import ReviewPage from './pages/ReviewPage'
-import SecondConversationPage from './pages/SecondConversationPage'
+import ConversationPage from './pages/ConversationPage'
 import FinalReflectionPage from './pages/FinalReflectionPage'
 import HowItWorksPage from './pages/HowItWorksPage'
-import ConversationPage from './pages/ConversationPage'
+import LandingPage from './pages/LandingPage'
 import ReceivingScreen from './pages/ReceivingPage'
-
+import { startConversation } from './services/conversationApi'
 import { hexLuminance, measureImageBrightness } from './theme/background'
-import type { CTReviewData, FinalReflectionData, ModelSummaryData} from './types/conversation'
+import type { ConversationResponse } from './types/conversation'
 import type { Screen } from './types/navigation'
 import type { BgConfig, SoundId, ThemeId } from './types/theme'
-import type { OneStepConversationResponse } from './types/conversation'
-import { startOneStepConversation } from './services/conversationApi'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing')
-
-  // Moedl loading state
-  const [conversationStart, setConversationStart] = useState<OneStepConversationResponse | null>(null) // first model response
-  const [receivingFinished, setReceivingFinished] = useState(false) // whether the animation is finished
-  const [isConversationStarting, setIsConversationStarting] = useState(false) // is waiting moel
-  const [conversationStartError, setConversationStartError] = useState<string | null>(null) // api request success
-
-  // Reflection state shared across pages
+  const [conversationStart, setConversationStart] = useState<ConversationResponse | null>(null)
+  const [receivingFinished, setReceivingFinished] = useState(false)
   const [thought, setThought] = useState('')
   const [conversationId, setConversationId] = useState<string | null>(null)
-  const [ctReview, setCtReview] = useState<CTReviewData | null>(null)
-  const [finalReflection, setFinalReflection] = useState<FinalReflectionData | null>(null)
-
-  // Theme
   const [bg, setBg] = useState<BgConfig>({ type: 'color', value: '#0f0f0f' })
   const [isLight, setIsLight] = useState(false)
   const [soundId, setSoundId] = useState<SoundId>('none')
   const [activeThemeId, setActiveThemeId] = useState<ThemeId | null>('none')
 
-  // Flow
-  const [reflectionFlow, setReflectionFlow] = useState<'two-step' | 'one-step'>('one-step')
-  const [modelSummary, setModelSummary] = useState<ModelSummaryData | null>(null)
-
-  // theme and sound effects
   useAmbientSound(soundId)
 
   useEffect(() => {
@@ -55,104 +34,54 @@ export default function App() {
   }, [bg])
 
   useEffect(() => {
-    if (screen === 'receiving' && receivingFinished && conversationStart) {
-      setScreen('conversation')}
-    }, [
-      screen,
-      receivingFinished,
-      conversationStart,
-    ])
+    if (screen === 'receiving' && receivingFinished && conversationStart) setScreen('conversation')
+  }, [screen, receivingFinished, conversationStart])
 
   const beginReflection = async (newThought: string) => {
     setThought(newThought)
-
-    // last conversation
+    setConversationId(null)
     setConversationStart(null)
-    setConversationStartError(null)
     setReceivingFinished(false)
-
-    // Receiving
     setScreen('receiving')
 
-    // backend / model request
-    setIsConversationStarting(true)
-
     try {
-      const response = await startOneStepConversation(newThought)
+      const response = await startConversation(newThought)
       setConversationStart(response)
     } catch (err) {
-      setConversationStartError(
-        err instanceof Error
-          ? err.message
-          : 'Could not start the conversation.',
-      )
-    } finally {
-      setIsConversationStarting(false)
+      console.error('[START CONVERSATION ERROR]', err)
+      setScreen('landing')
     }
   }
-
 
   const restart = () => {
     setThought('')
     setConversationId(null)
-    setCtReview(null)
-    setFinalReflection(null)
-    setModelSummary(null)
+    setConversationStart(null)
+    setReceivingFinished(false)
     setScreen('landing')
   }
 
   const isInfoPage = screen === 'howItWorks'
 
   return (
-    <div
-      className="w-full"
-      style={{
-        minHeight: '100vh',
-        height: isInfoPage ? 'auto' : '100dvh',
-        overflowY: isInfoPage ? 'auto' : 'hidden',
-      }}
-    >
+    <div className="w-full" style={{ minHeight: '100vh', height: isInfoPage ? 'auto' : '100dvh', overflowY: isInfoPage ? 'auto' : 'hidden' }}>
       {screen === 'landing' && (
         <>
-          <NavBar
-            onRestart={restart}
-            isLight={isLight}
-            onHowItWorks={() => setScreen('howItWorks')}
-          />
-          <LandingPage
-            bg={bg}
-            onBgChange={setBg}
-            isLight={isLight}
-            soundId={soundId}
-            onSoundChange={setSoundId}
-            onBegin={beginReflection}
-            onHowItWorks={() => setScreen('howItWorks')}
-            activeThemeId={activeThemeId}
-            onThemeId={setActiveThemeId}
-          />
+          <NavBar onRestart={restart} isLight={isLight} onHowItWorks={() => setScreen('howItWorks')} />
+          <LandingPage bg={bg} onBgChange={setBg} isLight={isLight} soundId={soundId} onSoundChange={setSoundId} onBegin={beginReflection} onHowItWorks={() => setScreen('howItWorks')} activeThemeId={activeThemeId} onThemeId={setActiveThemeId} />
         </>
       )}
-    
-      {screen === 'receiving' && (
-      <ReceivingScreen
-        thought={thought}
-        bg={bg}
-        isLight={isLight}
-        onComplete={() => setReceivingFinished(true)}
-      />
-    )}
 
-      {/* One Conversation Page */}
+      {screen === 'receiving' && <ReceivingScreen thought={thought} bg={bg} isLight={isLight} onComplete={() => setReceivingFinished(true)} />}
+
       {screen === 'conversation' && conversationStart && (
         <ConversationPage
           thought={thought}
           initialConversation={conversationStart}
           bg={bg}
           isLight={isLight}
-          onComplete={(id, summary) => {
+          onComplete={id => {
             setConversationId(id)
-            setModelSummary(summary)
-            setReflectionFlow('one-step')
             setScreen('finalReflection')
           }}
           onBack={() => setScreen('landing')}
@@ -160,94 +89,14 @@ export default function App() {
         />
       )}
 
-      {/* 01 / 04 — CT guided identification */}
-      {screen === 'firstConversation' && (
-        <FirstConversationPage
-          thought={thought}
-          bg={bg}
-          isLight={isLight}
-          onComplete={(id, data) => {
-            setConversationId(id)
-            setCtReview(data)
-            setScreen('review')
-          }}
-          onBack={() => setScreen('landing')}
-          onRestart={restart}
-        />
-      )}
-
-      {/* 02 / 04 — Review & Edit */}
-      {screen === 'review' && conversationId && ctReview && (
-        <ReviewPage
-          conversationId={conversationId}
-          data={ctReview}
-          bg={bg}
-          isLight={isLight}
-          onChange={setCtReview}
-          onContinue={updatedData => {
-            setCtReview(updatedData)
-            setScreen('secondConversation')
-          }}
-          onBack={() => setScreen('firstConversation')}
-        />
-      )}
-
-      {/* 03 / 04 — DAT driven restructuring */}
-      {screen === 'secondConversation' && conversationId && ctReview && (
-        <SecondConversationPage
-          conversationId={conversationId}
-          reviewData={ctReview}
-          bg={bg}
-          isLight={isLight}
-          onComplete={result => {
-            setFinalReflection(result)
-            setScreen('finalReflection')
-            setReflectionFlow('two-step')
-          }}
-          onBack={() => setScreen('review')}
-          onRestart={restart}
-        />
-      )}
-
-      {/* 04 / 04 — Final reflection */}
-      {screen === 'finalReflection' && (
-        (reflectionFlow === 'one-step'
-          ? conversationId !== null
-          : ctReview !== null && finalReflection !== null) && (
-
-          <FinalReflectionPage
-            conversationId={conversationId ?? undefined}
-            ctReview={ctReview ?? undefined}
-            result={finalReflection ?? undefined}
-            modelSummary={modelSummary ?? undefined}
-            bg={bg}
-            isLight={isLight}
-            flow={reflectionFlow}
-            onBack={() => {
-              if (reflectionFlow === 'one-step') {
-                setScreen('conversation')
-              } else {
-                setScreen('secondConversation')
-              }
-            }}
-            onRestart={restart}
-          />
-        )
+      {screen === 'finalReflection' && conversationId && (
+        <FinalReflectionPage conversationId={conversationId} bg={bg} isLight={isLight} onBack={() => setScreen('conversation')} onRestart={restart} />
       )}
 
       {screen === 'howItWorks' && (
         <>
-          <NavBar
-            onRestart={restart}
-            isLight={isLight}
-            onHowItWorks={() => setScreen('howItWorks')}
-          />
-          <HowItWorksPage
-            bg={bg}
-            isLight={isLight}
-            onBack={() => setScreen('landing')}
-            onBegin={() => setScreen('landing')}
-          />
+          <NavBar onRestart={restart} isLight={isLight} onHowItWorks={() => setScreen('howItWorks')} />
+          <HowItWorksPage bg={bg} isLight={isLight} onBack={() => setScreen('landing')} onBegin={() => setScreen('landing')} />
         </>
       )}
     </div>
