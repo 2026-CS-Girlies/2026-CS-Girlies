@@ -4,15 +4,17 @@ import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionField from '@/components/reflection/ReflectionField'
 import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
+import DustCanvas from '@/components/animation/DustCanvas'
+import { getConversationSummary } from '@/services/conversationApi'
 import { tk } from '@/theme/tokens'
 import type { CTReviewData, FinalReflectionData, ModelSummaryData } from '@/types/conversation'
 import type { BgConfig } from '@/types/theme'
-import { useState } from 'react'
-import DustCanvas from '@/components/animation/DustCanvas'
+import { useEffect, useState } from 'react'
 
 type ReflectionFlow = 'two-step' | 'one-step'
 
 type Props = {
+  conversationId?: string
   ctReview?: CTReviewData
   result?: FinalReflectionData
   modelSummary?: ModelSummaryData
@@ -23,13 +25,11 @@ type Props = {
   onRestart: () => void
 }
 
-
 const getOneStepItems = (modelSummary?: ModelSummaryData) => [
-  ['What the Thought May Be Connected To', modelSummary?.intermediate_belief],
-  ['A Deeper Belief That May Be Present', modelSummary?.core_belief],
+  ['The Original Thought', modelSummary?.original_thought],
+  ['Why It Felt True', modelSummary?.why_it_felt_true],
+  ['What Changed When You Looked Closer', modelSummary?.what_changed],
   ['A More Balanced Thought', modelSummary?.balanced_thought],
-  ['Where You Are Now', modelSummary?.current_progress],
-  ['One Small Next Step', modelSummary?.next_steps?.[0]],
 ] as const
 
 const getTwoStepItems = (ctReview?: CTReviewData, result?: FinalReflectionData) => [
@@ -41,13 +41,47 @@ const getTwoStepItems = (ctReview?: CTReviewData, result?: FinalReflectionData) 
   ['One Small Next Step', result?.next_step],
 ] as const
 
-export default function FinalReflectionPage({ ctReview, result, modelSummary, bg, isLight, flow, onBack, onRestart }: Props) {
+export default function FinalReflectionPage({ conversationId, ctReview, result, modelSummary, bg, isLight, flow, onBack, onRestart }: Props) {
   const c = tk(isLight)
-  const currentStep = flow === 'one-step' ? '02' : '04'
-  const totalSteps = flow === 'one-step' ? '02' : '04'
-  const items = flow === 'one-step' ? getOneStepItems(modelSummary) : getTwoStepItems(ctReview, result)
 
   const [leaving, setLeaving] = useState(false)
+  const [summary, setSummary] = useState<ModelSummaryData | undefined>(modelSummary)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState('')
+
+  const currentStep = flow === 'one-step' ? '02' : '04'
+  const totalSteps = flow === 'one-step' ? '02' : '04'
+  const items = flow === 'one-step' ? getOneStepItems(summary) : getTwoStepItems(ctReview, result)
+
+  useEffect(() => {
+
+    console.log('[SUMMARY EFFECT]')
+    console.log('[conversationId]', conversationId)
+    console.log('[summary]', summary)
+    console.log('[flow]', flow)
+
+    if (!conversationId || flow !== 'one-step') return
+
+    const loadSummary = async () => {
+      try {
+        setSummaryLoading(true)
+        setSummaryError('')
+
+        const response = await getConversationSummary(conversationId)
+
+        console.log('[QWEN FINAL SUMMARY]', response.summary)
+
+        setSummary(response.summary)
+      } catch (err) {
+        console.error('[SUMMARY ERROR]', err)
+        setSummaryError(err instanceof Error ? err.message : 'Could not generate summary.')
+      } finally {
+        setSummaryLoading(false)
+      }
+    }
+
+    void loadSummary()
+  }, [conversationId, flow])
 
   const handleDownload = () => {
     const now = new Date()
@@ -72,6 +106,9 @@ export default function FinalReflectionPage({ ctReview, result, modelSummary, bg
     URL.revokeObjectURL(url)
   }
 
+  console.log('[FINAL PAGE modelSummary]', modelSummary)
+  console.log('[FINAL PAGE summary]', summary)
+
   return (
     <>
       {leaving && <DustCanvas isLight={isLight} onDone={onRestart} />}
@@ -84,8 +121,22 @@ export default function FinalReflectionPage({ ctReview, result, modelSummary, bg
             <PageIntro isLight={isLight} title="A Clearer View" description="You examined the thought from more than one side. Here’s the perspective you arrived at." maxWidth="max-w-xl" />
 
             <ContentCard isLight={isLight}>
-              {items.map(([label, value]) => <ReflectionField key={label} label={label} value={value} isLight={isLight} />)}
-              <p className="text-sm text-center pt-2" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>This reflection belongs to you. Keep what feels useful and revise anything that doesn’t.</p>
+              {summaryLoading ? (
+                <p className="text-sm text-center py-8" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>
+                  Putting your reflection together…
+                </p>
+              ) : summaryError ? (
+                <p className="text-sm text-center py-8" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>
+                  {summaryError}
+                </p>
+              ) : (
+                <>
+                  {items.map(([label, value]) => <ReflectionField key={label} label={label} value={value} isLight={isLight} />)}
+                  <p className="text-sm text-center pt-2" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>
+                    This reflection belongs to you. Keep what feels useful and revise anything that doesn’t.
+                  </p>
+                </>
+              )}
             </ContentCard>
 
             <div className="flex flex-col sm:flex-row gap-3">

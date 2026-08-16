@@ -211,25 +211,29 @@ export default function App() {
 
       {/* 04 / 04 — Final reflection */}
       {screen === 'finalReflection' && (
-        (reflectionFlow === 'one-step' ? modelSummary !== null : ctReview !== null && finalReflection !== null) &&(
-        
-        <FinalReflectionPage
-          ctReview={ctReview ?? undefined}
-          result={finalReflection ?? undefined}
-          modelSummary={modelSummary ?? undefined}
-          bg={bg}
-          isLight={isLight}
-          flow={reflectionFlow}
-          onBack={() => {
-            if (reflectionFlow === 'one-step') {
-              setScreen('conversation')
-            } else {
-              setScreen('secondConversation')
-            }
-          }}
-          onRestart={restart}
-        />
-      ))}
+        (reflectionFlow === 'one-step'
+          ? conversationId !== null
+          : ctReview !== null && finalReflection !== null) && (
+
+          <FinalReflectionPage
+            conversationId={conversationId ?? undefined}
+            ctReview={ctReview ?? undefined}
+            result={finalReflection ?? undefined}
+            modelSummary={modelSummary ?? undefined}
+            bg={bg}
+            isLight={isLight}
+            flow={reflectionFlow}
+            onBack={() => {
+              if (reflectionFlow === 'one-step') {
+                setScreen('conversation')
+              } else {
+                setScreen('secondConversation')
+              }
+            }}
+            onRestart={restart}
+          />
+        )
+      )}
 
       {screen === 'howItWorks' && (
         <>

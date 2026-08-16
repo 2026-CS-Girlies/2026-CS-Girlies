@@ -5,6 +5,7 @@ import type {
   CTConversationResponse,
   CTReviewData,
   DATConversationResponse,
+  ModelSummaryData,
   OneStepConversationResponse,
   StartConversationRequest,
   UpdateCTReviewRequest,
@@ -114,6 +115,23 @@ export function completeEvidenceCollection(
     `/api/conversations/${conversationId}/evidence/complete`,
     {
       method: 'POST',
+    },
+  )
+}
+
+
+export type ConversationSummaryResponse = {
+  conversation_id: string
+  summary: ModelSummaryData
+}
+
+export function getConversationSummary(
+  conversationId: string,
+): Promise<ConversationSummaryResponse> {
+  return request<ConversationSummaryResponse>(
+    `/api/conversations/${conversationId}/summary`,
+    {
+      method: 'GET',
     },
   )
 }

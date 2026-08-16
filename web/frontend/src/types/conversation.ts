@@ -79,14 +79,21 @@ export type DATConversationResponse = {
 
 // for one-step conversation
 
+// export type ModelSummaryData = {
+//   automatic_thought: string
+//   intermediate_belief: string
+//   core_belief: string
+//   core_belief_inferred: boolean
+//   balanced_thought: string
+//   current_progress: string
+//   next_steps: string[]
+// }
+
 export type ModelSummaryData = {
-  automatic_thought: string
-  intermediate_belief: string
-  core_belief: string
-  core_belief_inferred: boolean
+  original_thought: string
+  why_it_felt_true: string
+  what_changed: string
   balanced_thought: string
-  current_progress: string
-  next_steps: string[]
 }
 
 

@@ -51,7 +51,7 @@ export default function EvidenceTray({
           <span
             className="flex-none pt-0.5"
             style={{
-              fontFamily: 'Fragment Mono, monospace',
+              fontFamily: 'Fragment Mono, mConversationEngineonospace',
               fontSize: 11,
               color: c.textFaint,
             }}

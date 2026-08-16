@@ -193,22 +193,44 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       setIsLoading(true)
       setError('')
 
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'user',
+          text: "I'm ready to investigate this evidence",
+        },
+      ])
+
       const response = await completeEvidenceCollection(
         conversationId,
       )
 
       setPhase(response.phase)
+
+      const assistantMessage = response.message
+
+      if (assistantMessage) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: 'assistant',
+            text: assistantMessage,
+          },
+        ])
+      }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Could not finish evidence collection.',
+          : 'Could not continue the reflection.',
       )
     } finally {
       setIsLoading(false)
     }
   }
-
+  
   console.log('[INITIAL CONVERSATION]', initialConversation)
   console.log('[INITIAL PHASE]', initialConversation.phase)
   console.log('[INITIAL BELIEF]', initialConversation.working_belief)
