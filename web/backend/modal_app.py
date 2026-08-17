@@ -168,17 +168,23 @@ def register_models():
 
     print("[DONE] Models registered")
 
-    
+
+@app.function(
+    image=image,
+    volumes={
+        "/models": model_volume,
+    },
+    secrets=[
+        modal.Secret.from_name("huggingface-secret")
+    ],
+    timeout=3600,
+)
 def download_models():
     from huggingface_hub import hf_hub_download
     import os
 
     os.makedirs("/models/crispers", exist_ok=True)
     os.makedirs("/models/qwen", exist_ok=True)
-
-    # -----------------------------
-    # Crispers 14B Q4_K_M
-    # -----------------------------
 
     print("[1/2] Downloading Crispers 14B Q4_K_M...")
 
@@ -191,10 +197,6 @@ def download_models():
     print("[CRISPERS] Downloaded:")
     print(crisprs_path)
 
-    # -----------------------------
-    # Qwen 2.5 3B Instruct Q4_K_M
-    # -----------------------------
-
     print("[2/2] Downloading Qwen 2.5 3B Q4_K_M...")
 
     qwen_path = hf_hub_download(
@@ -206,15 +208,51 @@ def download_models():
     print("[QWEN] Downloaded:")
     print(qwen_path)
 
-    # Persist everything
     model_volume.commit()
 
-    print("")
-    print("============================")
-    print("DOWNLOAD COMPLETE")
-    print("============================")
-    print("Crispers:")
-    print(crisprs_path)
-    print("")
-    print("Qwen:")
-    print(qwen_path)
+    print("[DONE] Downloads complete")
+
+
+
+@app.function(
+    image=image,
+    gpu="T4",
+    volumes={
+        "/models": model_volume,
+    },
+    min_containers=0,
+    max_containers=1,
+    scaledown_window=300,
+    timeout=1800,
+)
+@modal.asgi_app()
+def fastapi_app():
+
+    import sys
+
+    sys.path.insert(
+        0,
+        "/root/backend",
+    )
+
+    env = get_ollama_env()
+
+    print("[OLLAMA] Starting inference server...")
+
+    subprocess.Popen(
+        ["ollama", "serve"],
+        env=env,
+    )
+
+    wait_for_ollama()
+
+    print("[OLLAMA] Available models:")
+
+    subprocess.run(
+        ["ollama", "list"],
+        env=env,
+    )
+
+    from main import app as web_app
+
+    return web_app

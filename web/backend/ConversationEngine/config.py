@@ -7,10 +7,10 @@ OLLAMA_BASE_URL = os.getenv(
 
 CHAT_MODEL = os.getenv(
     "CHAT_MODEL",
-    "crispers:7b-q8"
+    "crispers:14b-q4"
 )
 
 SUMMARY_MODEL = os.getenv(
     "SUMMARY_MODEL",
-    "qwen2.5:3b"
+    "qwen2.5:3b-q4"
 )
