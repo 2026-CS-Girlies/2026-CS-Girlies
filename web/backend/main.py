@@ -6,7 +6,11 @@ from pydantic import BaseModel
 
 from ConversationEngine.conversation_engine import ConversationEngine
 from ConversationEngine.schema import FinalSummaryExtraction
-
+from ConversationEngine.config import (
+    CHAT_MODEL,
+    OLLAMA_BASE_URL,
+    SUMMARY_MODEL,
+)
 
 app = FastAPI(title="Still True API")
 conversations: dict[str, ConversationEngine] = {}
@@ -79,6 +83,12 @@ def start_conversation(request: StartConversationRequest):
         conversations.pop(conversation_id, None)
         print("[MODEL ERROR] start_conversation:", exc)
         raise HTTPException(status_code=500, detail="Model request failed") from exc
+
+    
+    print("[CONFIG] OLLAMA_BASE_URL =", OLLAMA_BASE_URL)
+    print("[CONFIG] CHAT_MODEL =", CHAT_MODEL)
+    print("[CONFIG] SUMMARY_MODEL =", SUMMARY_MODEL)
+
 
     print(f"[START] {conversation_id}: {initial_thought}")
     return _build_response(conversation_id, engine, message)

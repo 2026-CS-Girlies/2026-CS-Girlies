@@ -4,3 +4,4 @@ export type Screen =
   | 'conversation'
   | 'finalReflection'
   | 'howItWorks'
+  | 'privacy'
