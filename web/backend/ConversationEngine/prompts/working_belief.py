@@ -145,141 +145,108 @@ The schema contains:
 - working_belief: str | null
 - belief_clear: bool
 
-BELIEF CLEAR
+PASS RULE
 
-Set belief_clear = true when the user has expressed ONE usable negative thought that can be examined later.
+This phase should be easy to complete.
 
-A usable thought does not need to be deep, detailed, or perfectly worded.
+Set belief_clear = true when the user expresses any meaningful negative
+thought, concern, self-judgment, prediction, or emotion related to what
+they want to explore.
 
-Examples that are already clear:
+The response does NOT need to be:
+- a perfectly formed belief
+- a complete sentence
+- a deep core belief
+- specific enough for formal CBT analysis
+
+Examples that should PASS:
 
 "I'm not good enough."
-"I'm not doing well enough."
-"I'm a failure."
-"I'm incompetent."
-"I'm going to fail."
-"They probably don't like me."
-"I always mess things up."
+"I'm not enough."
+"I feel bad."
+"I feel depressed."
+"I'm frustrated."
+"I'm stressed about school."
+"I think I'll fail."
+"I hate how I did on the test."
+"I feel like everyone is better than me."
+"just bad"
+"I feel terrible about myself."
 
-When a usable thought is already clear:
+When the response contains a meaningful negative thought or feeling:
 
 - belief_clear = true
 - working_belief = preserve the user's wording as closely as possible
 - message = ""
 
-Do NOT ask another exploratory question merely because:
-- the thought is short
-- the user has not explained why they believe it
-- the user has not described evidence
-- a deeper belief might exist
+DO NOT keep asking questions just to make the thought more specific.
+Later phases can clarify and examine it.
 
-Those issues belong to later phases.
+DO NOT PASS
 
-BELIEF NOT CLEAR
-
-Set belief_clear = false only when there is not yet a specific thought that can reasonably be examined.
+Set belief_clear = false only when the user has not yet provided
+anything meaningful to explore.
 
 Examples:
 
-"I feel bad."
-"I'm stressed."
-"Everything sucks."
-"I don't know."
-"School."
+"Hi"
+"Hello"
+"Hey"
+"How are you?"
+"What is this?"
+"Okay"
+"Yes"
+"No"
+"I don't know"
+"Not sure"
 
 When belief_clear = false:
 
 - working_belief = null
-- message = a brief, natural continuation
+- message = one brief question inviting the user to share what is bothering them
 - ask at most one question
-- use recent conversation context
-- do not repeat the previous question
-
-REPETITION CHECK
-
-Before returning message:
-
-1. Check the most recent assistant question in history.
-2. If the new question has substantially the same meaning, do not use it.
-3. Choose a different angle based on the user's latest words.
 
 Example:
-
-Assistant:
-"When you feel like that, what do you find yourself thinking?"
-
-User:
-"I just feel depressed."
-
-Bad:
-"When you feel depressed, what are you thinking?"
-
-Better:
-"That sounds like a heavy reaction to the thought. What does 'I'm not good enough' seem to say about you when it hits you?"
-
-However, if "I'm not good enough" is already the user's stated thought, it should normally already have been marked belief_clear = true and this extra question should not be necessary.
-
-EXAMPLES
 
 User:
 "Hi"
 
 Output:
-{{
-  "message": "Hi. What’s been on your mind lately?",
+{
+  "message": "Hi. What’s been bothering you lately?",
   "working_belief": null,
   "belief_clear": false
-}}
+}
 
 User:
-"I've been feeling really behind compared with everyone else."
+"I was frustrated after my test."
 
 Output:
-{{
-  "message": "When you notice yourself falling behind, what does that make you think about yourself?",
-  "working_belief": null,
-  "belief_clear": false
-}}
-
-User:
-"I just feel depressed about school."
-
-Output:
-{{
-  "message": "What about school feels most connected to that feeling?",
-  "working_belief": null,
-  "belief_clear": false
-}}
-
-User:
-"I think I'm not good enough."
-
-Output:
-{{
+{
   "message": "",
-  "working_belief": "I'm not good enough.",
+  "working_belief": "I was frustrated after my test.",
   "belief_clear": true
-}}
+}
 
 User:
-"I'm not doing well enough."
+"just bad"
 
 Output:
-{{
+{
   "message": "",
-  "working_belief": "I'm not doing well enough.",
+  "working_belief": "just bad",
   "belief_clear": true
-}}
+}
 
 User:
-"I feel like everyone else is better than me."
+"I'm not enough"
 
 Output:
-{{
+{
   "message": "",
-  "working_belief": "Everyone else is better than me.",
+  "working_belief": "I'm not enough",
   "belief_clear": true
-}}
+}
 """.strip()
 
 
