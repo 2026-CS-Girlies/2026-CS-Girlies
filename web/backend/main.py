@@ -13,7 +13,10 @@ conversations: dict[str, ConversationEngine] = {}
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://stilltrue.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -173,3 +176,7 @@ async def get_conversation_summary(conversation_id: str):
         "conversation_id": conversation_id,
         "data": summary,
     }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
