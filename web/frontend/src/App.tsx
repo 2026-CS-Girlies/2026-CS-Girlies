@@ -6,6 +6,9 @@ import FinalReflectionPage from './pages/FinalReflectionPage'
 import HowItWorksPage from './pages/HowItWorksPage'
 import LandingPage from './pages/LandingPage'
 import ReceivingScreen from './pages/ReceivingPage'
+import PrivacyPage from './pages/PrivacyPage'
+import HackathonFooter from './components/layout/HackathonFooter'
+
 import { startConversation } from './services/conversationApi'
 import { hexLuminance, measureImageBrightness } from './theme/background'
 import type { ConversationResponse } from './types/conversation'
@@ -22,6 +25,7 @@ export default function App() {
   const [isLight, setIsLight] = useState(false)
   const [soundId, setSoundId] = useState<SoundId>('none')
   const [activeThemeId, setActiveThemeId] = useState<ThemeId | null>('none')
+  const navigate = (nextScreen: Screen) => {setScreen(nextScreen)}
 
   useAmbientSound(soundId)
 
@@ -32,10 +36,6 @@ export default function App() {
       measureImageBrightness(bg.url).then(l => setIsLight(l > 0.5))
     }
   }, [bg])
-
-  useEffect(() => {
-    if (screen === 'receiving' && receivingFinished && conversationStart) setScreen('conversation')
-  }, [screen, receivingFinished, conversationStart])
 
   const beginReflection = async (newThought: string) => {
     setThought(newThought)
@@ -67,8 +67,9 @@ export default function App() {
     <div className="w-full" style={{ minHeight: '100vh', height: isInfoPage ? 'auto' : '100dvh', overflowY: isInfoPage ? 'auto' : 'hidden' }}>
       {screen === 'landing' && (
         <>
-          <NavBar onRestart={restart} isLight={isLight} onHowItWorks={() => setScreen('howItWorks')} />
+          <NavBar onRestart={restart} isLight={isLight} currentScreen={screen} onNavigate={navigate} />
           <LandingPage bg={bg} onBgChange={setBg} isLight={isLight} soundId={soundId} onSoundChange={setSoundId} onBegin={beginReflection} onHowItWorks={() => setScreen('howItWorks')} activeThemeId={activeThemeId} onThemeId={setActiveThemeId} />
+          <HackathonFooter isLight={isLight} />
         </>
       )}
 
@@ -95,10 +96,19 @@ export default function App() {
 
       {screen === 'howItWorks' && (
         <>
-          <NavBar onRestart={restart} isLight={isLight} onHowItWorks={() => setScreen('howItWorks')} />
+          <NavBar isLight={isLight} currentScreen={screen} onNavigate={navigate} onRestart={restart}/>          
           <HowItWorksPage bg={bg} isLight={isLight} onBack={() => setScreen('landing')} onBegin={() => setScreen('landing')} />
         </>
       )}
+
+      {screen === 'privacy' && (
+        <>
+          <NavBar isLight={isLight} currentScreen={screen} onNavigate={navigate} onRestart={restart}/>          
+          <PrivacyPage bg={bg} isLight={isLight} onBack={() => setScreen('landing')} />
+        </>
+      )}
+
+
     </div>
   )
 }

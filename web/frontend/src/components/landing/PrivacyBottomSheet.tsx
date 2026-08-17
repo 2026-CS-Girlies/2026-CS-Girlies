@@ -9,7 +9,7 @@ export default function PrivacyBottomSheet({ isLight, onClose }: { isLight: bool
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       {/* Sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-[28px] p-6 flex flex-col gap-4"
+        className="fixed bottom-[100px] left-0 right-0 z-50 rounded-t-[28px] p-6 flex flex-col gap-4"
         style={{ background: isLight ? '#fff' : '#1a1a1a', boxShadow: '0 -8px 48px rgba(0,0,0,0.25)' }}
       >
         {/* Handle */}
