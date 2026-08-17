@@ -103,10 +103,36 @@ export default function ReceivingScreen({
   const current = story[step]
 
   return (
+    
     <div className="fixed inset-0 z-10 overflow-hidden" style={bgStyle(bg)}>
       {bg.type === 'image' && (
         <div className="absolute inset-0" style={{ background: c.imgOverlay }} />
       )}
+
+      <div
+        className="absolute top-20 left-1/2 -translate-x-1/2 z-20"
+        style={{
+          padding: '7px 12px',
+          borderRadius: 999,
+          border: `1px solid ${
+            isLight
+              ? 'rgba(0,0,0,.12)'
+              : 'rgba(255,255,255,.14)'
+          }`,
+          background: isLight
+            ? 'rgba(255,255,255,.28)'
+            : 'rgba(255,255,255,.05)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          fontFamily: 'Fragment Mono, monospace',
+          fontSize: 9,
+          letterSpacing: '0.06em',
+          color: c.textMuted,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Free GPU in use — model loading may take up to a minute.
+      </div>
 
       <main className="absolute inset-0 flex items-center justify-center px-6 sm:px-10">
         <section className="w-full max-w-5xl text-center" style={{ color: c.text }}>
