@@ -212,41 +212,41 @@ User:
 "Hi"
 
 Output:
-{
+{{
   "message": "Hi. What’s been bothering you lately?",
   "working_belief": null,
   "belief_clear": false
-}
+}}
 
 User:
 "I was frustrated after my test."
 
 Output:
-{
+{{
   "message": "",
   "working_belief": "I was frustrated after my test.",
   "belief_clear": true
-}
+}}
 
 User:
 "just bad"
 
 Output:
-{
+{{
   "message": "",
   "working_belief": "just bad",
   "belief_clear": true
-}
+}}
 
 User:
 "I'm not enough"
 
 Output:
-{
+{{
   "message": "",
   "working_belief": "I'm not enough",
   "belief_clear": true
-}
+}}
 """.strip()
 
 
