@@ -37,6 +37,12 @@ export default function App() {
     }
   }, [bg])
 
+  useEffect(() => {
+    if (screen === 'receiving' && receivingFinished && conversationStart) {
+      setScreen('conversation')
+    }
+  }, [screen, receivingFinished, conversationStart])
+
   const beginReflection = async (newThought: string) => {
     setThought(newThought)
     setConversationId(null)
@@ -73,7 +79,21 @@ export default function App() {
         </>
       )}
 
-      {screen === 'receiving' && <ReceivingScreen thought={thought} bg={bg} isLight={isLight} onComplete={() => setReceivingFinished(true)} />}
+      {screen === 'receiving' && (
+        <>
+          <NavBar onRestart={restart} isLight={isLight} currentScreen={screen} onNavigate={navigate} />
+          <ReceivingScreen
+            thought={thought}
+            bg={bg}
+            isLight={isLight}
+            modelReady={Boolean(conversationStart)}
+            onComplete={() => setReceivingFinished(true)}
+            onSkip={() => {
+              if (conversationStart) setScreen('conversation')
+            }}
+          />
+        </>
+      )}
 
       {screen === 'conversation' && conversationStart && (
         <ConversationPage

@@ -3,7 +3,6 @@ import { bgStyle } from '../theme/background'
 import { tk } from '../theme/tokens'
 import type { BgConfig } from '../types/theme'
 
-const RIPPLE_COUNT = 5
 const STEP_MS = 3600
 
 type Stage = 'received' | 'thought' | 'defense' | 'prosecution' | 'judge' | 'ready'
@@ -15,6 +14,15 @@ type StoryStep = {
   body: string
 }
 
+type Props = {
+  thought: string
+  bg: BgConfig
+  isLight: boolean
+  onComplete: () => void
+  modelReady: boolean
+  onSkip: () => void
+}
+
 export default function ReceivingScreen({
   thought,
   bg,
@@ -22,14 +30,7 @@ export default function ReceivingScreen({
   onComplete,
   modelReady,
   onSkip,
-}: {
-  thought: string
-  bg: BgConfig
-  isLight: boolean
-  onComplete: () => void
-  modelReady: boolean
-  onSkip: () => void
-}) {
+}: Props) {
   const c = tk(isLight)
   const [step, setStep] = useState(0)
   const [leaving, setLeaving] = useState(false)
@@ -45,37 +46,37 @@ export default function ReceivingScreen({
         stage: 'received',
         eyebrow: 'THOUGHT RECEIVED',
         title: `“${thought}”`,
-        body: 'While the model gets ready, here’s a quick look at what we’ll do with this thought.',
+        body: 'We’ll use a simple CBT-inspired process to look at this thought from more than one angle.',
       },
       {
         stage: 'thought',
         eyebrow: '01 · THE THOUGHT',
         title: 'Put the thought on the stand.',
-        body: 'CBT starts by noticing the automatic thought that arrived — before deciding whether it is completely true.',
+        body: 'Notice the thought first, before deciding whether it tells the whole story.',
       },
       {
         stage: 'defense',
         eyebrow: '02 · THE DEFENSE',
-        title: 'Become the defense attorney.',
-        body: 'Bring forward the experiences and evidence that make this thought feel convincing.',
+        title: 'Make the case for it.',
+        body: 'Bring forward the experiences that make the thought feel believable.',
       },
       {
         stage: 'prosecution',
         eyebrow: '03 · THE PROSECUTION',
-        title: 'Now question the evidence.',
-        body: 'Look closely at what actually happened, what you assumed, and what the thought may be leaving out.',
+        title: 'Question the evidence.',
+        body: 'Separate what actually happened from what you concluded in the moment.',
       },
       {
         stage: 'judge',
         eyebrow: '04 · THE JUDGE',
-        title: 'Hold both sides at once.',
-        body: 'Compare the full picture. Not to force a positive answer — but to arrive at a fairer, more balanced one.',
+        title: 'Compare both sides.',
+        body: 'Look for a view that is more complete, fair, and grounded in the full picture.',
       },
       {
         stage: 'ready',
         eyebrow: 'YOUR TURN',
         title: 'What still feels true?',
-        body: 'Your reflection is ready. Let’s examine the thought together.',
+        body: 'Your reflection is ready whenever you are.',
       },
     ],
     [thought],
@@ -100,204 +101,162 @@ export default function ReceivingScreen({
   }, [story])
 
   const current = story[step]
-  const strokeColor = isLight ? 'rgba(0,0,0,VAL)' : 'rgba(255,255,255,VAL)'
-  const ring = (opacity: string) => strokeColor.replace('VAL', opacity)
 
   return (
     <div className="fixed inset-0 z-10 overflow-hidden" style={bgStyle(bg)}>
-      {bg.type === 'image' && <div className="absolute inset-0" style={{ background: c.imgOverlay }} />}
-
-      <div
-        className="absolute inset-0"
-        style={{
-          background: isLight
-            ? 'radial-gradient(circle at 50% 48%, rgba(255,255,255,.08), rgba(255,255,255,0) 46%)'
-            : 'radial-gradient(circle at 50% 48%, rgba(255,255,255,.045), rgba(255,255,255,0) 46%)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {current.stage === 'received' &&
-        Array.from({ length: RIPPLE_COUNT }, (_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              left: '50%',
-              top: '50%',
-              width: '60vmax',
-              height: '60vmax',
-              border: `1px solid ${ring(String(0.32 - i * 0.045))}`,
-              animation: `ripple 2.8s cubic-bezier(0.2,0.6,0.4,1) ${i * 460}ms both`,
-              pointerEvents: 'none',
-            }}
-          />
-        ))}
+      {bg.type === 'image' && (
+        <div className="absolute inset-0" style={{ background: c.imgOverlay }} />
+      )}
 
       <main className="absolute inset-0 flex items-center justify-center px-6 sm:px-10">
-        <section
-          key={step}
-          className="receiving-story-step w-full max-w-5xl text-center"
-          style={{
-            color: c.text,
-            animation: leaving
-              ? 'receiving-stage-out 0.52s ease-in forwards'
-              : 'receiving-stage-in 0.8s cubic-bezier(0.2,0.8,0.3,1) both',
-          }}
-        >
+        <section className="w-full max-w-5xl text-center" style={{ color: c.text }}>
           <div
             style={{
-              fontFamily: 'Fragment Mono, monospace',
-              fontSize: 11,
-              letterSpacing: '0.18em',
-              color: c.textMuted,
-              marginBottom: 'clamp(20px, 4vh, 34px)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 34,
             }}
           >
-            {current.eyebrow}
+            <div style={{ position: 'relative', width: 14, height: 14 }}>
+              {!modelReady &&
+                Array.from({ length: 3 }, (_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      width: 14,
+                      height: 14,
+                      borderRadius: '50%',
+                      border: '1px solid rgba(226,85,85,.5)',
+                      animation: `model-status-ripple 2.2s cubic-bezier(0.2,0.6,0.4,1) ${i * 520}ms infinite`,
+                    }}
+                  />
+                ))}
+
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  background: modelReady ? '#4f8cff' : '#e25555',
+                  boxShadow: modelReady
+                    ? '0 0 12px rgba(79,140,255,.6)'
+                    : '0 0 10px rgba(226,85,85,.5)',
+                  animation: modelReady
+                    ? 'model-ready-pop .55s cubic-bezier(0.2,0.8,0.3,1) both'
+                    : 'none',
+                }}
+              />
+            </div>
+
+            <span
+              style={{
+                fontFamily: 'Fragment Mono, monospace',
+                fontSize: 9,
+                letterSpacing: '0.18em',
+                color: modelReady ? c.text : c.textMuted,
+              }}
+            >
+              {modelReady ? 'MODEL READY' : 'LOADING MODEL'}
+            </span>
           </div>
 
-          {current.stage === 'received' ? (
+          <section
+            key={step}
+            style={{
+              animation: leaving
+                ? 'receiving-stage-out 0.52s ease-in forwards'
+                : 'receiving-stage-in 0.8s cubic-bezier(0.2,0.8,0.3,1) both',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'Fragment Mono, monospace',
+                fontSize: 10,
+                letterSpacing: '0.16em',
+                color: c.textMuted,
+                marginBottom: 22,
+              }}
+            >
+              {current.eyebrow}
+            </div>
+
             <h1
               style={{
                 margin: 0,
                 fontFamily: 'Instrument Serif, serif',
-                fontSize: 'clamp(38px, 7.2vw, 92px)',
-                fontStyle: 'italic',
+                fontSize: 'clamp(42px, 7.2vw, 88px)',
                 fontWeight: 400,
-                lineHeight: 1.02,
-                letterSpacing: '-0.025em',
+                lineHeight: 1,
+                letterSpacing: '-0.035em',
+                fontStyle: current.stage === 'received' ? 'italic' : 'normal',
                 whiteSpace: 'pre-wrap',
               }}
             >
               {current.title}
             </h1>
-          ) : (
-            <>
-              <div
-                aria-hidden="true"
-                style={{
-                  fontFamily: 'Instrument Serif, serif',
-                  fontSize: 'clamp(76px, 16vw, 220px)',
-                  lineHeight: 0.72,
-                  opacity: isLight ? 0.06 : 0.08,
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -56%)',
-                  whiteSpace: 'nowrap',
-                  pointerEvents: 'none',
-                }}
-              >
-                {current.stage === 'thought' && 'THOUGHT'}
-                {current.stage === 'defense' && 'DEFENSE'}
-                {current.stage === 'prosecution' && 'PROSECUTION'}
-                {current.stage === 'judge' && 'JUDGE'}
-                {current.stage === 'ready' && 'TRUE?'}
-              </div>
 
-              <h1
-                style={{
-                  position: 'relative',
-                  margin: 0,
-                  fontFamily: 'Instrument Serif, serif',
-                  fontSize: 'clamp(42px, 7.4vw, 96px)',
-                  fontWeight: 400,
-                  lineHeight: 0.98,
-                  letterSpacing: '-0.035em',
-                }}
-              >
-                {current.title}
-              </h1>
-            </>
-          )}
-
-          <p
-            style={{
-              position: 'relative',
-              maxWidth: 650,
-              margin: 'clamp(26px, 5vh, 44px) auto 0',
-              fontFamily: 'Inter, sans-serif',
-              fontSize: 'clamp(14px, 1.7vw, 18px)',
-              lineHeight: 1.7,
-              color: c.textMuted,
-            }}
-          >
-            {current.body}
-          </p>
-        </section>
-      </main>
-
-      <div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex w-[min(92vw,720px)] flex-col items-center gap-4"
-      >
-        <div className="flex items-center gap-2" aria-hidden="true">
-          {story.map((item, index) => (
-            <span
-              key={item.stage}
+            <p
               style={{
-                display: 'block',
-                width: index === step ? 28 : 5,
-                height: 5,
-                borderRadius: 999,
-                background: c.text,
-                opacity: index === step ? 0.72 : 0.18,
-                transition: 'width 450ms ease, opacity 450ms ease',
-              }}
-            />
-          ))}
-        </div>
-
-        <div
-          className="flex min-h-9 items-center justify-center gap-3"
-          style={{
-            fontFamily: 'Fragment Mono, monospace',
-            fontSize: 10,
-            letterSpacing: '0.08em',
-            color: c.textMuted,
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 999,
-              background: c.text,
-              opacity: modelReady ? 0.72 : 0.38,
-              animation: modelReady ? 'none' : 'receiving-status-pulse 1.5s ease-in-out infinite',
-            }}
-          />
-
-          <span aria-live="polite">
-            {modelReady ? 'Model is Ready' : 'Loading model...'}
-          </span>
-
-          {modelReady && (
-            <button
-              type="button"
-              onClick={onSkip}
-              className="receiving-skip-button"
-              style={{
-                marginLeft: 4,
-                border: `1px solid ${isLight ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.28)'}`,
-                borderRadius: 999,
-                padding: '7px 13px',
-                color: c.text,
-                background: isLight ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.06)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-                fontFamily: 'Fragment Mono, monospace',
-                fontSize: 10,
-                letterSpacing: '0.08em',
-                cursor: 'pointer',
+                maxWidth: 620,
+                margin: '28px auto 0',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 'clamp(13px, 1.5vw, 17px)',
+                lineHeight: 1.7,
+                color: c.textMuted,
               }}
             >
-              SKIP →
-            </button>
-          )}
-        </div>
-      </div>
+              {current.body}
+            </p>
+          </section>
+
+          <div className="mt-10 flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2" aria-hidden="true">
+              {story.map((item, index) => (
+                <span
+                  key={item.stage}
+                  style={{
+                    display: 'block',
+                    width: index === step ? 24 : 5,
+                    height: 5,
+                    borderRadius: 999,
+                    background: c.text,
+                    opacity: index === step ? 0.68 : 0.17,
+                    transition: 'width 400ms ease, opacity 400ms ease',
+                  }}
+                />
+              ))}
+            </div>
+
+            {modelReady && (
+              <button
+                type="button"
+                onClick={onSkip}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: c.textMuted,
+                  fontFamily: 'Fragment Mono, monospace',
+                  fontSize: 8,
+                  letterSpacing: '0.08em',
+                  padding: '3px 5px',
+                  cursor: 'pointer',
+                  opacity: 0.7,
+                }}
+              >
+                CONTINUE →
+              </button>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   )
 }

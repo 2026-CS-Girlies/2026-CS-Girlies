@@ -109,3 +109,36 @@ html, body, #root {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Receiving story ───────────────────────────────────────────────────── */
+@keyframes receiving-stage-in {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.985);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes receiving-stage-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) scale(1.01);
+    filter: blur(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .receiving-story-step {
+    animation-duration: 0.01ms !important;
+  }
+}
