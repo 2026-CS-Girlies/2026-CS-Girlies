@@ -25,7 +25,12 @@ export default function App() {
   const [isLight, setIsLight] = useState(false)
   const [soundId, setSoundId] = useState<SoundId>('none')
   const [activeThemeId, setActiveThemeId] = useState<ThemeId | null>('none')
-  const navigate = (nextScreen: Screen) => {setScreen(nextScreen)}
+
+  const navigate = (nextScreen: Screen) => {
+    setScreen(nextScreen)
+  }
+
+  const isModelReady = Boolean(conversationStart?.message?.trim())
 
   useAmbientSound(soundId)
 
@@ -37,6 +42,12 @@ export default function App() {
     }
   }, [bg])
 
+  useEffect(() => {
+    if (screen === 'receiving' && isModelReady) {
+      setScreen('conversation')
+    }
+  }, [screen, isModelReady])
+
   const beginReflection = async (newThought: string) => {
     setThought(newThought)
     setConversationId(null)
@@ -46,6 +57,11 @@ export default function App() {
 
     try {
       const response = await startConversation(newThought)
+
+      console.log('[START RESPONSE]', response)
+      console.log('[START MESSAGE]', response.message)
+      console.log('[MODEL READY]', Boolean(response.message?.trim()))
+
       setConversationStart(response)
     } catch (err) {
       console.error('[START CONVERSATION ERROR]', err)
@@ -64,16 +80,57 @@ export default function App() {
   const isInfoPage = screen === 'howItWorks'
 
   return (
-    <div className="w-full" style={{ minHeight: '100vh', height: isInfoPage ? 'auto' : '100dvh', overflowY: isInfoPage ? 'auto' : 'hidden' }}>
+    <div
+      className="w-full"
+      style={{
+        minHeight: '100vh',
+        height: isInfoPage ? 'auto' : '100dvh',
+        overflowY: isInfoPage ? 'auto' : 'hidden',
+      }}
+    >
       {screen === 'landing' && (
         <>
-          <NavBar onRestart={restart} isLight={isLight} currentScreen={screen} onNavigate={navigate} />
-          <LandingPage bg={bg} onBgChange={setBg} isLight={isLight} soundId={soundId} onSoundChange={setSoundId} onBegin={beginReflection} onHowItWorks={() => setScreen('howItWorks')} activeThemeId={activeThemeId} onThemeId={setActiveThemeId} />
+          <NavBar
+            onRestart={restart}
+            isLight={isLight}
+            currentScreen={screen}
+            onNavigate={navigate}
+          />
+          <LandingPage
+            bg={bg}
+            onBgChange={setBg}
+            isLight={isLight}
+            soundId={soundId}
+            onSoundChange={setSoundId}
+            onBegin={beginReflection}
+            onHowItWorks={() => setScreen('howItWorks')}
+            activeThemeId={activeThemeId}
+            onThemeId={setActiveThemeId}
+          />
           <HackathonFooter isLight={isLight} />
         </>
       )}
 
-      {screen === 'receiving' && <ReceivingScreen thought={thought} bg={bg} isLight={isLight} onComplete={() => setReceivingFinished(true)} />}
+      {screen === 'receiving' && (
+        <>
+          <NavBar
+            onRestart={restart}
+            isLight={isLight}
+            currentScreen={screen}
+            onNavigate={navigate}
+          />
+          <ReceivingScreen
+            thought={thought}
+            bg={bg}
+            isLight={isLight}
+            modelReady={isModelReady}
+            onComplete={() => setReceivingFinished(true)}
+            onSkip={() => {
+              if (isModelReady) setScreen('conversation')
+            }}
+          />
+        </>
+      )}
 
       {screen === 'conversation' && conversationStart && (
         <ConversationPage
@@ -91,24 +148,47 @@ export default function App() {
       )}
 
       {screen === 'finalReflection' && conversationId && (
-        <FinalReflectionPage conversationId={conversationId} bg={bg} isLight={isLight} onBack={() => setScreen('conversation')} onRestart={restart} />
+        <FinalReflectionPage
+          conversationId={conversationId}
+          bg={bg}
+          isLight={isLight}
+          onBack={() => setScreen('conversation')}
+          onRestart={restart}
+        />
       )}
 
       {screen === 'howItWorks' && (
         <>
-          <NavBar isLight={isLight} currentScreen={screen} onNavigate={navigate} onRestart={restart}/>          
-          <HowItWorksPage bg={bg} isLight={isLight} onBack={() => setScreen('landing')} onBegin={() => setScreen('landing')} />
+          <NavBar
+            isLight={isLight}
+            currentScreen={screen}
+            onNavigate={navigate}
+            onRestart={restart}
+          />
+          <HowItWorksPage
+            bg={bg}
+            isLight={isLight}
+            onBack={() => setScreen('landing')}
+            onBegin={() => setScreen('landing')}
+          />
         </>
       )}
 
       {screen === 'privacy' && (
         <>
-          <NavBar isLight={isLight} currentScreen={screen} onNavigate={navigate} onRestart={restart}/>          
-          <PrivacyPage bg={bg} isLight={isLight} onBack={() => setScreen('landing')} />
+          <NavBar
+            isLight={isLight}
+            currentScreen={screen}
+            onNavigate={navigate}
+            onRestart={restart}
+          />
+          <PrivacyPage
+            bg={bg}
+            isLight={isLight}
+            onBack={() => setScreen('landing')}
+          />
         </>
       )}
-
-
     </div>
   )
 }

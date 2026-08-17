@@ -301,7 +301,7 @@ def register_models():
     volumes={
         MODEL_MOUNT: model_volume,
     },
-    min_containers=0,
+    min_containers=1,
     max_containers=1,
     scaledown_window=300,
     timeout=1800,
