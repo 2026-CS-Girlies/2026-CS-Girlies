@@ -10,7 +10,7 @@ import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
 import { conversationPhaseConfig } from '@/config/conversationPhases'
-import { DEMO_TURNS } from '@/data/demoConversation'
+import { DEMO_TRANSITIONS, DEMO_TURNS } from '@/data/demoConversation'
 
 const DEMO_EVIDENCE_COUNT = DEMO_TURNS.filter(turn => turn.phase === 'evidence_form').length
 import { completeEvidenceCollection, completeReflection, confirmBelief, sendConversationMessage } from '@/services/conversationApi'
@@ -140,10 +140,10 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       if (demoMode) {
         if (confirmed) {
           setPhase('evidence_form')
-          appendAssistantMessage(`Let's make the strongest case for that thought first.\n\nWhat evidence makes “I'm being left behind” feel true?`)
+          appendAssistantMessage(DEMO_TRANSITIONS.beliefConfirmed)
         } else {
           setPhase('working_belief')
-          appendAssistantMessage('What would be a more accurate way to say the thought that is bothering you?')
+          appendAssistantMessage(DEMO_TRANSITIONS.beliefRejected)
         }
       } else {
         const response = await confirmBelief(conversationId, confirmed)
@@ -167,7 +167,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
 
       if (demoMode) {
         setPhase('reflection')
-        appendAssistantMessage(`Okay.\n\nSo there are real changes here:\n\n• Some tasks you learned are becoming automated.\n• There are newer technologies you don't know yet.\n• The skills employers ask for are changing.\n\nWe're not going to pretend those things aren't happening.\n\nLet's look at what they actually mean.\n\nStart with this one:\n\n“AI can automate things I spent years learning.”\n\nWhat can it do now that you used to do manually?`)
+        appendAssistantMessage(DEMO_TRANSITIONS.evidenceComplete)
       } else {
         const response = await completeEvidenceCollection(conversationId)
         setPhase(response.phase)
