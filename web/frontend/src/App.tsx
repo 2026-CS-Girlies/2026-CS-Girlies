@@ -19,7 +19,6 @@ import type { BgConfig, SoundId, ThemeId } from './types/theme'
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing')
   const [conversationStart, setConversationStart] = useState<ConversationResponse | null>(null)
-  const [receivingFinished, setReceivingFinished] = useState(false)
   const [thought, setThought] = useState('')
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [bg, setBg] = useState<BgConfig>({ type: 'color', value: '#0f0f0f' })
@@ -28,11 +27,13 @@ export default function App() {
   const [activeThemeId, setActiveThemeId] = useState<ThemeId | null>('none')
   const [demoMode, setDemoMode] = useState(false)
 
+  const isModelReady = conversationStart !== null
+
+  
   const navigate = (nextScreen: Screen) => {
     setScreen(nextScreen)
-  }
-
-  const isModelReady = Boolean(conversationStart)
+  }  
+  
   useAmbientSound(soundId)
 
   useEffect(() => {
@@ -43,18 +44,11 @@ export default function App() {
     }
   }, [bg])
 
-  useEffect(() => {
-    if (screen === 'receiving' && isModelReady && (!demoMode || receivingFinished)) {
-      setScreen('conversation')
-    }
-  }, [screen, isModelReady, demoMode, receivingFinished])
-
   const beginReflection = async (newThought: string, useDemo = false) => {
     setThought(newThought)
     setDemoMode(useDemo)
     setConversationId(null)
     setConversationStart(null)
-    setReceivingFinished(false)
     setScreen('receiving')
 
     try {
@@ -75,7 +69,6 @@ export default function App() {
     setThought('')
     setConversationId(null)
     setConversationStart(null)
-    setReceivingFinished(false)
     setDemoMode(false)
     setScreen('landing')
   }
@@ -127,10 +120,9 @@ export default function App() {
             bg={bg}
             isLight={isLight}
             modelReady={isModelReady}
-            onComplete={() => setReceivingFinished(true)}
-            onSkip={() => {
-              if (isModelReady) setScreen('conversation')
-            }}
+            onContinue={() => {setScreen('conversation')}}
+            onBack={() => setScreen('landing')}
+            onRestart={restart}
           />
         </>
       )}
