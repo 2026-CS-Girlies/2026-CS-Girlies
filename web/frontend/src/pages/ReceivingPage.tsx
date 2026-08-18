@@ -100,7 +100,7 @@ export default function ReceivingPage({
     {
       id: 1,
       role: 'assistant',
-      text: `StillTrue is on its way. While we wait, want to explore something?`,
+      text: `Still True is on its way. It usually takes around a minute to get ready, so while we wait, want to explore something?`,
     },
   ])
 
