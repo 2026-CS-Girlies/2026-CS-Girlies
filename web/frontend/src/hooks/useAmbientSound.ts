@@ -1,38 +1,50 @@
 import { useEffect, useRef } from 'react'
-import { BUILDERS } from '@/audio/ambientSound'
-import type { StopFn } from '@/audio/ambientSound'
 import type { SoundId } from '@/types/theme'
 
+const SOUND_FILES: Record<Exclude<SoundId, 'none'>, string> = {
+  rain: '/sounds/rain.wav',
+  ocean: '/sounds/ocean.wav',
+  forest: '/sounds/forest.mp3',
+  fire: '/sounds/fire.mp3',
+  wind: '/sounds/wind.wav',
+}
+
 export function useAmbientSound(soundId: SoundId) {
-  const ctxRef = useRef<AudioContext | null>(null)
-  const stopRef = useRef<StopFn | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    // Tear down previous
-    stopRef.current?.()
-    stopRef.current = null
-
-    if (soundId === 'none') {
-      ctxRef.current?.close()
-      ctxRef.current = null
-      return
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      audioRef.current = null
     }
 
-    const ctx = ctxRef.current ?? new AudioContext()
-    ctxRef.current = ctx
-    if (ctx.state === 'suspended') ctx.resume()
+    if (soundId === 'none') return
 
-    stopRef.current = BUILDERS[soundId](ctx)
+    const audio = new Audio(SOUND_FILES[soundId])
+
+    audio.loop = true
+    audio.volume = 0.35
+    audio.preload = 'auto'
+
+    audioRef.current = audio
+
+    audio.play().catch(error => {
+      console.warn('[AMBIENT SOUND] Could not autoplay:', error)
+    })
 
     return () => {
-      stopRef.current?.()
-      stopRef.current = null
+      audio.pause()
+      audio.currentTime = 0
     }
   }, [soundId])
 
-  // Cleanup on unmount
-  useEffect(() => () => {
-    stopRef.current?.()
-    ctxRef.current?.close()
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
   }, [])
 }
