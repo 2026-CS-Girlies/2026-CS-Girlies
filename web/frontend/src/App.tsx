@@ -8,6 +8,7 @@ import LandingPage from './pages/LandingPage'
 import ReceivingScreen from './pages/ReceivingPage'
 import PrivacyPage from './pages/PrivacyPage'
 import HackathonFooter from './components/layout/HackathonFooter'
+import MobileWarning from './components/landing/MobileWarning'
 
 import { startConversation } from './services/conversationApi'
 import { DEMO_START_RESPONSE, DEMO_SUMMARY } from './data/demoConversation'
@@ -43,11 +44,11 @@ export default function App() {
     }
   }, [bg])
 
-  useEffect(() => {
-    if (screen === 'receiving' && isModelReady && (!demoMode || receivingFinished)) {
-      setScreen('conversation')
-    }
-  }, [screen, isModelReady, demoMode, receivingFinished])
+  // useEffect(() => {
+  //   if (screen === 'receiving' && isModelReady && (!demoMode || receivingFinished)) {
+  //     setScreen('conversation')
+  //   }
+  // }, [screen, isModelReady, demoMode, receivingFinished])
 
   const beginReflection = async (newThought: string, useDemo = false) => {
     setThought(newThought)
@@ -82,6 +83,9 @@ export default function App() {
 
   const isInfoPage = screen === 'howItWorks'
 
+
+
+
   return (
     <div
       className="w-full"
@@ -91,6 +95,7 @@ export default function App() {
         overflowY: isInfoPage ? 'auto' : 'hidden',
       }}
     >
+      <MobileWarning />
       {screen === 'landing' && (
         <>
           <NavBar
@@ -115,24 +120,21 @@ export default function App() {
       )}
 
       {screen === 'receiving' && (
-        <>
-          <NavBar
-            onRestart={restart}
-            isLight={isLight}
-            currentScreen={screen}
-            onNavigate={navigate}
-          />
-          <ReceivingScreen
-            thought={thought}
-            bg={bg}
-            isLight={isLight}
-            modelReady={isModelReady}
-            onComplete={() => setReceivingFinished(true)}
-            onSkip={() => {
-              if (isModelReady) setScreen('conversation')
-            }}
-          />
-        </>
+        <ReceivingScreen
+          thought={thought}
+          bg={bg}
+          isLight={isLight}
+          modelReady={isModelReady}
+          onContinue={() => {
+            if (isModelReady) setScreen('conversation')
+          }}
+          onBack={() => setScreen('landing')}
+          onRestart={restart}
+          onBgChange={setBg}
+          onSoundChange={setSoundId}
+          activeThemeId={activeThemeId}
+          onThemeId={setActiveThemeId}
+        />
       )}
 
       {screen === 'conversation' && conversationStart && (
@@ -142,6 +144,10 @@ export default function App() {
           bg={bg}
           isLight={isLight}
           demoMode={demoMode}
+          onBgChange={setBg}
+          onSoundChange={setSoundId}
+          activeThemeId={activeThemeId}
+          onThemeId={setActiveThemeId}
           onComplete={id => {
             setConversationId(id)
             setScreen('finalReflection')
@@ -159,6 +165,10 @@ export default function App() {
           onBack={() => setScreen('conversation')}
           onRestart={restart}
           demoSummary={demoMode ? DEMO_SUMMARY : undefined}
+          onBgChange={setBg}
+          onSoundChange={setSoundId}
+          activeThemeId={activeThemeId}
+          onThemeId={setActiveThemeId}
         />
       )}
 
