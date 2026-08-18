@@ -6,15 +6,17 @@ import type { BgConfig, SoundId, ThemeId } from '../../types/theme'
 interface ThemeButtonProps {
   isLight: boolean
   onTheme: (bg: BgConfig, sound: SoundId, id: ThemeId) => void
-  onCustomize: () => void
   activeThemeId: ThemeId | null
+  onCustomize?: () => void
+  inline?: boolean
 }
 
 export default function ThemeButton({
   isLight,
   onTheme,
-  onCustomize,
   activeThemeId,
+  onCustomize,
+  inline = false,
 }: ThemeButtonProps) {
   const [open, setOpen] = useState(false)
   const c = tk(isLight)
@@ -31,7 +33,13 @@ export default function ThemeButton({
         />
       )}
 
-      <div className="absolute bottom-6 right-5 md:bottom-8 md:right-8 z-40 flex flex-col items-end gap-0">
+      <div
+        className={
+          inline
+            ? 'relative z-40 flex flex-col items-end gap-0'
+            : 'absolute bottom-6 right-5 md:bottom-8 md:right-8 z-40 flex flex-col items-end gap-0'
+        }
+      >
         {/* Drop-up panel */}
         <div
           style={{
@@ -44,7 +52,9 @@ export default function ThemeButton({
           <div
             className="flex flex-col rounded-2xl overflow-hidden"
             style={{
-              background: isLight ? 'rgba(255,255,255,0.92)' : 'rgba(22,22,22,0.92)',
+              background: isLight
+                ? 'rgba(255,255,255,0.92)'
+                : 'rgba(22,22,22,0.92)',
               border: `1px solid ${c.customizeBorder}`,
               backdropFilter: 'blur(16px)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
@@ -57,6 +67,7 @@ export default function ThemeButton({
               return (
                 <button
                   key={theme.id}
+                  type="button"
                   onClick={() => {
                     onTheme(theme.bg, theme.sound, theme.id)
                     setOpen(false)
@@ -104,70 +115,103 @@ export default function ThemeButton({
               )
             })}
 
-            {/* Divider + Customize */}
-            <div style={{ borderTop: `1px solid ${c.divider}` }}>
-              <button
-                onClick={() => {
-                  onCustomize()
-                  setOpen(false)
-                }}
-                className="flex items-center gap-3 px-4 py-3 w-full text-left transition-opacity hover:opacity-70"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  style={{ flexShrink: 0 }}
+            {onCustomize && (
+              <div style={{ borderTop: `1px solid ${c.divider}` }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCustomize()
+                    setOpen(false)
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 w-full text-left transition-opacity hover:opacity-70"
                 >
-                  <circle
-                    cx="7"
-                    cy="7"
-                    r="2"
-                    stroke={c.textMuted}
-                    strokeWidth="1.2"
-                  />
-                  <path
-                    d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M9.01 9.01l1.06 1.06M2.93 11.07l1.06-1.06M9.01 4.99l1.06-1.06"
-                    stroke={c.textMuted}
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span
-                  className="text-sm"
-                  style={{ fontFamily: 'Inter, sans-serif', color: c.textMuted }}
-                >
-                  Customize
-                </span>
-              </button>
-            </div>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    style={{ flexShrink: 0 }}
+                  >
+                    <circle
+                      cx="7"
+                      cy="7"
+                      r="2"
+                      stroke={c.textMuted}
+                      strokeWidth="1.2"
+                    />
+                    <path
+                      d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M9.01 9.01l1.06 1.06M2.93 11.07l1.06-1.06M9.01 4.99l1.06-1.06"
+                      stroke={c.textMuted}
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span
+                    className="text-sm"
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      color: c.textMuted,
+                    }}
+                  >
+                    Customize
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Trigger button */}
+        {/* Trigger button
+            < 960px: circular icon button
+            >= 960px: current pill-style theme button
+        */}
         <button
+          type="button"
           onClick={() => setOpen(value => !value)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all duration-200 hover:opacity-80 active:scale-95"
+          aria-label="Choose theme"
+          className="
+            w-10 h-10 min-[960px]:w-auto min-[960px]:h-auto
+            flex items-center justify-center
+            min-[960px]:gap-2 min-[960px]:px-4 min-[960px]:py-2
+            rounded-full text-sm
+            transition-all duration-200
+            hover:opacity-80 active:scale-95
+          "
           style={{
             fontFamily: 'Inter, sans-serif',
             color: c.customizeText,
             background: c.customizeBg,
             border: `1px solid ${c.customizeBorder}`,
             backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
           }}
         >
-          {activeTheme && (
-            <span
-              className="w-5 h-5 flex items-center justify-center flex-none"
-              style={{
-                color: c.customizeText,
-              }}
-            >
-              {activeTheme.icon}
-            </span>
-          )}
-          <span>
+          <span
+            className="w-5 h-5 flex items-center justify-center flex-none"
+            style={{ color: c.customizeText }}
+          >
+            {activeTheme ? (
+              activeTheme.icon
+            ) : (
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="8" cy="10" r="1" />
+                <circle cx="12" cy="7" r="1" />
+                <circle cx="16" cy="10" r="1" />
+              </svg>
+            )}
+          </span>
+
+          <span className="hidden min-[960px]:inline">
             theme
             {label ? <span style={{ opacity: 0.5 }}>: {label}</span> : null}
           </span>
