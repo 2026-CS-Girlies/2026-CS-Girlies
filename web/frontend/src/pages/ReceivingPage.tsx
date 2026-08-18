@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ChatBubble from '@/components/chat/ChatBubble'
+import ConfirmationBubble from '@/components/chat/ConfirmationBubble'
 import HackathonFooter from '@/components/layout/HackathonFooter'
 import ThemeButton from '@/components/landing/ThemeButton'
 import PageIntro from '@/components/reflection/PageIntro'
@@ -94,36 +95,32 @@ export default function ReceivingPage({
   onThemeId,
 }: Props) {
   const c = tk(isLight)
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
       role: 'assistant',
-      text: `Our model is on its way. While we wait, want to explore something?`,
+      text: `StillTrue is on its way. While we wait, want to explore something?`,
     },
   ])
+
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>(MAIN_REPLIES)
   const [trapIndex, setTrapIndex] = useState(0)
-  const [readyAnnounced, setReadyAnnounced] = useState(false)
+
   const nextId = useRef(2)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+
+  const actionButtonStyle = {
+    fontFamily: 'Inter, sans-serif',
+    fontWeight: 500,
+    background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)',
+    border: `0.5px solid ${isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.11)'}`,
+    color: isLight ? '#555555' : '#aaaaaa',
+  } as const
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [messages, quickReplies, modelReady])
-
-  useEffect(() => {
-    if (!modelReady || readyAnnounced) return
-
-    setReadyAnnounced(true)
-    setMessages(current => [
-      ...current,
-      {
-        id: nextId.current++,
-        role: 'assistant',
-        text: `Your model is ready. You can start your reflection whenever you're ready.`,
-      },
-    ])
-  }, [modelReady, readyAnnounced])
 
   const appendAssistant = (text: string) => {
     setMessages(current => [
@@ -174,6 +171,7 @@ export default function ReceivingPage({
       case 'trap-next': {
         const next = (trapIndex + 1) % TRAPS.length
         const trap = TRAPS[next]
+
         setTrapIndex(next)
         appendAssistant(`${trap.title}\n${trap.example}`)
         setQuickReplies(TRAP_REPLIES)
@@ -229,21 +227,20 @@ export default function ReceivingPage({
         <PageIntro
           isLight={isLight}
           title="While You Wait"
-          description={
-            modelReady
-              ? 'Your model is ready. Start whenever you want.'
-              : 'The model is waking up. Explore something while it gets ready.'
-          }
+          description={modelReady
+            ? 'Your model is ready whenever you are.'
+            : 'The model is waking up. Explore something while it gets ready.'}
           className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none"
         />
 
-        <div className="w-full max-w-4xl mx-auto flex-1 min-h-0 px-3 md:px-0 pb-3 md:pb-4 flex flex-col">
+        <div className="relative w-full max-w-4xl mx-auto flex-1 min-h-0 px-3 md:px-0 pb-3 md:pb-4 flex flex-col">
           <div
             className="relative z-10 flex-1 min-h-0 flex flex-col mx-3 md:mx-6 mb-10 rounded-[24px] overflow-hidden"
             style={{
               background: c.panelBg,
               border: `1px solid ${c.border}`,
               backdropFilter: 'blur(28px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
               boxShadow: c.panelShadow,
             }}
           >
@@ -258,11 +255,22 @@ export default function ReceivingPage({
                 </ChatBubble>
               ))}
 
+              {modelReady && (
+                <ConfirmationBubble
+                  isLight={isLight}
+                  message={<>StillTrue is ready. You can start your reflection whenever you're ready.</>}
+                  rejectLabel="Keep Exploring"
+                  confirmLabel="Start Reflection →"
+                  onReject={() => {}}
+                  onConfirm={onContinue}
+                />
+              )}
+
               <div ref={bottomRef} />
             </div>
 
             <div
-              className="flex-none px-4 md:px-8 pt-3 pb-3 flex flex-col gap-2"
+              className="flex-none px-4 md:px-8 pt-3 pb-2 flex flex-col gap-2"
               style={{ borderTop: `1px solid ${c.divider}` }}
             >
               <div className="flex flex-wrap gap-2">
@@ -271,41 +279,82 @@ export default function ReceivingPage({
                     key={option.id}
                     type="button"
                     onClick={() => handleQuickReply(option)}
-                    className="transition-all hover:-translate-y-px"
-                    style={{
-                      border: `1px solid ${isLight ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.18)'}`,
-                      borderRadius: 999,
-                      padding: '8px 12px',
-                      background: isLight ? 'rgba(255,255,255,.26)' : 'rgba(255,255,255,.05)',
-                      color: c.text,
-                      fontFamily: 'Inter, sans-serif',
-                      fontSize: 12,
-                      lineHeight: 1,
-                      cursor: 'pointer',
-                      backdropFilter: 'blur(8px)',
-                      WebkitBackdropFilter: 'blur(8px)',
-                    }}
+                    className="flex items-center gap-[6px] px-3 py-1.5 rounded-[10px] text-xs whitespace-nowrap transition-all duration-150 hover:opacity-80 active:scale-95"
+                    style={actionButtonStyle}
                   >
                     {option.label}
                   </button>
                 ))}
               </div>
 
-              {modelReady && (
+              <div
+                className="flex items-center gap-3 rounded-2xl px-4 py-2.5 md:py-3"
+                style={{
+                  background: c.inputBg,
+                  border: `1px solid ${c.inputBorder}`,
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                }}
+              >
+                <input
+                  type="text"
+                  value=""
+                  readOnly
+                  disabled
+                  placeholder={modelReady ? 'Model ready' : 'Model is loading…'}
+                  className="flex-1 min-w-0 text-sm outline-none bg-transparent cursor-default disabled:opacity-60"
+                  style={{ fontFamily: 'Inter, sans-serif', color: c.inputText }}
+                />
+
                 <button
                   type="button"
-                  onClick={onContinue}
-                  className="demo-ready-sparkle self-start mt-1 rounded-full px-4 py-2.5 text-xs font-medium transition-opacity hover:opacity-80"
+                  disabled={!modelReady}
+                  onClick={() => {
+                    if (modelReady) {
+                      onContinue()
+                    }
+                  }}
+                  aria-label={modelReady ? 'Start conversation' : 'Model loading'}
+                  className={`
+                    w-8 h-8
+                    rounded-full
+                    flex items-center justify-center
+                    transition-all duration-150
+                    disabled:opacity-40
+                    ${
+                      modelReady
+                        ? 'demo-ready-sparkle cursor-pointer hover:opacity-80 active:scale-95'
+                        : 'cursor-not-allowed'
+                    }
+                  `}
                   style={{
-                    border: `1px solid ${c.inputBorder}`,
-                    background: c.inputBg,
-                    color: c.inputText,
-                    fontFamily: 'Inter, sans-serif',
+                    background: c.sendBg,
+                    border: `1px solid ${c.sendBorder}`,
                   }}
                 >
-                  Your model is ready →
+                  {!modelReady ? (
+                    <span
+                      className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"
+                      style={{ color: isLight ? '#555' : '#aaa' }}
+                    />
+                  ) : (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 7h8M8 4l3 3-3 3"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
                 </button>
-              )}
+              </div>
             </div>
           </div>
 

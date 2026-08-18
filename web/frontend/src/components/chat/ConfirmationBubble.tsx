@@ -28,8 +28,9 @@ export default function ConfirmationBubble({
 
       <div className="flex items-center gap-3 mt-4">
         <button
+          type="button"
           onClick={onReject}
-          className="text-sm px-4 py-2 rounded-full hover:opacity-80"
+          className="text-sm px-4 py-2 rounded-full hover:opacity-80 transition-opacity"
           style={{
             color: c.textMuted,
             border: `1px solid ${c.border}`,
@@ -39,8 +40,9 @@ export default function ConfirmationBubble({
         </button>
 
         <button
+          type="button"
           onClick={onConfirm}
-          className="text-sm px-4 py-2 rounded-full hover:opacity-80"
+          className="demo-ready-sparkle text-sm px-4 py-2 rounded-full hover:opacity-80 transition-all"
           style={{
             background: c.sendBg,
             border: `1px solid ${c.sendBorder}`,
