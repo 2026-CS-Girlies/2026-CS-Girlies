@@ -8,6 +8,7 @@ import LandingPage from './pages/LandingPage'
 import ReceivingScreen from './pages/ReceivingPage'
 import PrivacyPage from './pages/PrivacyPage'
 import HackathonFooter from './components/layout/HackathonFooter'
+import MobileWarning from './components/landing/MobileWarning'
 
 import { startConversation } from './services/conversationApi'
 import { DEMO_START_RESPONSE, DEMO_SUMMARY } from './data/demoConversation'
@@ -82,6 +83,9 @@ export default function App() {
 
   const isInfoPage = screen === 'howItWorks'
 
+
+
+
   return (
     <div
       className="w-full"
@@ -91,6 +95,7 @@ export default function App() {
         overflowY: isInfoPage ? 'auto' : 'hidden',
       }}
     >
+      <MobileWarning />
       {screen === 'landing' && (
         <>
           <NavBar
