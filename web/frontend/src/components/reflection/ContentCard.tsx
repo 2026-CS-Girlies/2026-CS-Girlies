@@ -19,8 +19,8 @@ export default function ContentCard({
       className={`rounded-[24px] md:rounded-[30px] w-full px-5 md:px-8 py-8 md:py-10 flex flex-col gap-6 ${className}`}
       style={{
         background: isLight
-          ? 'rgba(255,255,255,0.72)'
-          : 'rgba(24,24,24,0.72)',
+        ? 'rgba(255,255,255,0.35)'
+        : 'rgba(255,255,255,0.05)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         border: `1px solid ${
