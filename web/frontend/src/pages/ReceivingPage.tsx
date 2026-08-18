@@ -1,288 +1,300 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { bgStyle } from '../theme/background'
-import { tk } from '../theme/tokens'
-import type { BgConfig } from '../types/theme'
-
-const STEP_MS = 3600
-
-type Stage = 'received' | 'thought' | 'defense' | 'prosecution' | 'judge' | 'ready'
-
-type StoryStep = {
-  stage: Stage
-  eyebrow: string
-  title: string
-  body: string
-}
+import { useEffect, useRef, useState } from 'react'
+import ChatBubble from '@/components/chat/ChatBubble'
+import PageIntro from '@/components/reflection/PageIntro'
+import ReflectionShell from '@/components/reflection/ReflectionShell'
+import StepHeader from '@/components/reflection/StepHeader'
+import { tk } from '@/theme/tokens'
+import type { BgConfig } from '@/types/theme'
 
 type Props = {
   thought: string
   bg: BgConfig
   isLight: boolean
-  onComplete: () => void
   modelReady: boolean
-  onSkip: () => void
+  onContinue: () => void
+  onBack: () => void
+  onRestart: () => void
 }
 
-export default function ReceivingScreen({
+type ChatMessage = {
+  id: number
+  role: 'user' | 'assistant'
+  text: string
+}
+
+type QuickReply = {
+  id: string
+  label: string
+}
+
+const MAIN_REPLIES: QuickReply[] = [
+  { id: 'cbt', label: 'What is CBT?' },
+  { id: 'demo', label: 'Show me a demo' },
+  { id: 'traps', label: 'Common thinking traps' },
+  { id: 'already', label: 'I know CBT already' },
+]
+
+const CBT_REPLIES: QuickReply[] = [
+  { id: 'demo', label: 'Show me how' },
+  { id: 'traps', label: 'Thinking traps' },
+  { id: 'home', label: 'Back' },
+]
+
+const DEMO_REPLIES: QuickReply[] = [
+  { id: 'demo-more', label: 'Continue the demo' },
+  { id: 'traps', label: 'Thinking traps' },
+  { id: 'home', label: 'Back' },
+]
+
+const TRAP_REPLIES: QuickReply[] = [
+  { id: 'trap-next', label: 'Another one →' },
+  { id: 'demo', label: 'Show me a demo' },
+  { id: 'home', label: 'Back' },
+]
+
+const EXPERIENCED_REPLIES: QuickReply[] = [
+  { id: 'play', label: 'Give me a quick prompt' },
+  { id: 'worksheet', label: 'Browse a mini worksheet' },
+  { id: 'research', label: 'Why does this work?' },
+  { id: 'home', label: 'Back' },
+]
+
+const TRAPS = [
+  {
+    title: 'ALL-OR-NOTHING THINKING',
+    example: `“If I don't do this perfectly, I've completely failed.”`,
+  },
+  {
+    title: 'MIND READING',
+    example: `“She didn't reply. She must be annoyed with me.”`,
+  },
+  {
+    title: 'CATASTROPHIZING',
+    example: `“If I mess this up, everything is going to fall apart.”`,
+  },
+]
+
+export default function ReceivingPage({
   thought,
   bg,
   isLight,
-  onComplete,
   modelReady,
-  onSkip,
+  onContinue,
+  onBack,
+  onRestart,
 }: Props) {
   const c = tk(isLight)
-  const [step, setStep] = useState(0)
-  const [leaving, setLeaving] = useState(false)
-  const onCompleteRef = useRef(onComplete)
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      role: 'assistant',
+      text: `Our model is on its way. While we wait, want to explore something?`,
+    },
+  ])
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>(MAIN_REPLIES)
+  const [trapIndex, setTrapIndex] = useState(0)
+  const [readyAnnounced, setReadyAnnounced] = useState(false)
+  const nextId = useRef(2)
+  const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    onCompleteRef.current = onComplete
-  }, [onComplete])
-
-  const story = useMemo<StoryStep[]>(
-    () => [
-      // {
-      //   stage: 'received',
-      //   eyebrow: 'THOUGHT RECEIVED',
-      //   title: `“${thought}”`,
-      //   body: 'We’ll use a simple CBT-inspired process to look at this thought from more than one angle.',
-      // },
-      {
-        stage: 'thought',
-        eyebrow: '01 · THE THOUGHT',
-        title: 'Put the thought on the stand.',
-        body: 'Notice the thought first, before deciding whether it tells the whole story.',
-      },
-      {
-        stage: 'defense',
-        eyebrow: '02 · THE DEFENSE',
-        title: 'Make the case for it.',
-        body: 'Bring forward the experiences that make the thought feel believable.',
-      },
-      {
-        stage: 'prosecution',
-        eyebrow: '03 · THE PROSECUTION',
-        title: 'Question the evidence.',
-        body: 'Separate what actually happened from what you concluded in the moment.',
-      },
-      {
-        stage: 'judge',
-        eyebrow: '04 · THE JUDGE',
-        title: 'Compare both sides.',
-        body: 'Look for a view that is more complete, fair, and grounded in the full picture.',
-      },
-      {
-        stage: 'ready',
-        eyebrow: 'YOUR TURN',
-        title: 'What still feels true?',
-        body: 'Your reflection is ready whenever you are.',
-      },
-    ],
-    [thought],
-  )
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [messages, quickReplies, modelReady])
 
   useEffect(() => {
-    const ids: ReturnType<typeof setTimeout>[] = []
+    if (!modelReady || readyAnnounced) return
 
-    story.slice(1).forEach((_, index) => {
-      const changeAt = STEP_MS * (index + 1)
-      ids.push(setTimeout(() => setLeaving(true), changeAt - 520))
-      ids.push(
-        setTimeout(() => {
-          setStep(index + 1)
-          setLeaving(false)
-        }, changeAt),
-      )
-    })
+    setReadyAnnounced(true)
+    setMessages(current => [
+      ...current,
+      {
+        id: nextId.current++,
+        role: 'assistant',
+        text: `Your model is ready. You can start your reflection whenever you're ready.`,
+      },
+    ])
+  }, [modelReady, readyAnnounced])
 
-    ids.push(setTimeout(() => onCompleteRef.current(), STEP_MS * story.length - 800))
-    return () => ids.forEach(clearTimeout)
-  }, [story])
+  const appendAssistant = (text: string) => {
+    setMessages(current => [
+      ...current,
+      { id: nextId.current++, role: 'assistant', text },
+    ])
+  }
 
-  const current = story[step]
+  const handleQuickReply = (reply: QuickReply) => {
+    setMessages(current => [
+      ...current,
+      { id: nextId.current++, role: 'user', text: reply.label },
+    ])
+
+    switch (reply.id) {
+      case 'cbt':
+        appendAssistant(
+          `CBT is based on a simple idea: what happens to us matters, but the meaning our mind gives it matters too. For example: “My manager corrected my work.” → “Everyone thinks I'm incompetent.” → anxiety or shame. Still True helps you slow down that middle step and ask whether it tells the whole story.`,
+        )
+        setQuickReplies(CBT_REPLIES)
+        break
+
+      case 'demo':
+        appendAssistant(
+          `Here's a quick example. Someone thinks: “I'm falling behind because AI is changing everything.” Still True might ask: “What are you afraid all this change means about you?” That helps move from the situation to the thought underneath it.`,
+        )
+        setQuickReplies(DEMO_REPLIES)
+        break
+
+      case 'demo-more':
+        appendAssistant(
+          `They answer: “That my skills are becoming obsolete.” Instead of saying “don't worry,” Still True looks at what makes that feel true, what the evidence actually supports, and what may be missing from the picture.`,
+        )
+        setQuickReplies([
+          { id: 'traps', label: 'Show me a thinking trap' },
+          { id: 'home', label: 'Back to topics' },
+        ])
+        break
+
+      case 'traps': {
+        const trap = TRAPS[0]
+        setTrapIndex(0)
+        appendAssistant(`${trap.title}\n${trap.example}\n\nSound familiar?`)
+        setQuickReplies(TRAP_REPLIES)
+        break
+      }
+
+      case 'trap-next': {
+        const next = (trapIndex + 1) % TRAPS.length
+        const trap = TRAPS[next]
+        setTrapIndex(next)
+        appendAssistant(`${trap.title}\n${trap.example}`)
+        setQuickReplies(TRAP_REPLIES)
+        break
+      }
+
+      case 'already':
+        appendAssistant(`Got it. Want something a little different while the model wakes up?`)
+        setQuickReplies(EXPERIENCED_REPLIES)
+        break
+
+      case 'play':
+        appendAssistant(
+          `Try this: think of one sentence your mind says when something goes wrong. Then ask, “What happened — and what did I conclude from it?” That gap is often where the interesting part starts.`,
+        )
+        setQuickReplies(EXPERIENCED_REPLIES)
+        break
+
+      case 'worksheet':
+        appendAssistant(
+          `A tiny three-line worksheet:\n1. What happened?\n2. What did your mind say it meant?\n3. What evidence would make that conclusion more — or less — complete?`,
+        )
+        setQuickReplies(EXPERIENCED_REPLIES)
+        break
+
+      case 'research':
+        appendAssistant(
+          `The basic CBT idea is not to force a positive thought. It's to examine whether an automatic interpretation is accurate, useful, and supported by the full evidence — then build a more balanced view.`,
+        )
+        setQuickReplies(EXPERIENCED_REPLIES)
+        break
+
+      case 'home':
+        appendAssistant(`What would you like to explore?`)
+        setQuickReplies(MAIN_REPLIES)
+        break
+    }
+  }
 
   return (
-    
-    <div className="fixed inset-0 z-10 overflow-hidden" style={bgStyle(bg)}>
-      {bg.type === 'image' && (
-        <div className="absolute inset-0" style={{ background: c.imgOverlay }} />
-      )}
+    <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0">
+        <StepHeader
+          current="00"
+          total="03"
+          isLight={isLight}
+          onBack={onBack}
+          onRestart={onRestart}
+          className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4"
+        />
 
-      <div
-        className="absolute top-20 left-1/2 -translate-x-1/2 z-20"
-        style={{
-          padding: '7px 12px',
-          borderRadius: 999,
-          border: `1px solid ${
-            isLight
-              ? 'rgba(0,0,0,.12)'
-              : 'rgba(255,255,255,.14)'
-          }`,
-          background: isLight
-            ? 'rgba(255,255,255,.28)'
-            : 'rgba(255,255,255,.05)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          fontFamily: 'Fragment Mono, monospace',
-          fontSize: 9,
-          letterSpacing: '0.06em',
-          color: c.textMuted,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        Free GPU in use — model loading may take up to a minute.
-      </div>
+        <PageIntro
+          isLight={isLight}
+          title="While You Wait"
+          description={modelReady
+            ? 'Your model is ready. Start whenever you want.'
+            : 'The model is waking up. Explore something while it gets ready.'}
+          className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none"
+        />
 
-      <main className="absolute inset-0 flex items-center justify-center px-6 sm:px-10">
-        <section className="w-full max-w-5xl text-center" style={{ color: c.text }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 12,
-              marginBottom: 34,
-            }}
-          >
-            <div style={{ position: 'relative', width: 14, height: 14 }}>
-              {!modelReady &&
-                Array.from({ length: 3 }, (_, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: '50%',
-                      width: 14,
-                      height: 14,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(226,85,85,.5)',
-                      animation: `model-status-ripple 2.2s cubic-bezier(0.2,0.6,0.4,1) ${i * 520}ms infinite`,
-                    }}
-                  />
-                ))}
+        <div
+          className="relative z-10 flex-1 flex flex-col mx-3 md:mx-6 mb-3 md:mb-5 rounded-[24px] overflow-hidden"
+          style={{
+            background: c.panelBg,
+            border: `1px solid ${c.border}`,
+            backdropFilter: 'blur(28px) saturate(1.4)',
+            boxShadow: c.panelShadow,
+          }}
+        >
+          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 flex flex-col gap-3 md:gap-4">
+            <ChatBubble role="user" isLight={isLight} quoted>
+              <p className="font-medium">"{thought}"</p>
+            </ChatBubble>
 
-              <span
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  background: modelReady ? '#4f8cff' : '#e25555',
-                  boxShadow: modelReady
-                    ? '0 0 12px rgba(79,140,255,.6)'
-                    : '0 0 10px rgba(226,85,85,.5)',
-                  animation: modelReady
-                    ? 'model-ready-pop .55s cubic-bezier(0.2,0.8,0.3,1) both'
-                    : 'none',
-                }}
-              />
-            </div>
+            {messages.map(message => (
+              <ChatBubble key={message.id} role={message.role} isLight={isLight}>
+                {message.text}
+              </ChatBubble>
+            ))}
 
-            <span
-              style={{
-                fontFamily: 'Fragment Mono, monospace',
-                fontSize: 9,
-                letterSpacing: '0.18em',
-                color: modelReady ? c.text : c.textMuted,
-              }}
-            >
-              {modelReady ? 'MODEL READY' : 'LOADING MODEL'}
-            </span>
+            <div ref={bottomRef} />
           </div>
 
-          <section
-            key={step}
-            style={{
-              animation: leaving
-                ? 'receiving-stage-out 0.52s ease-in forwards'
-                : 'receiving-stage-in 0.8s cubic-bezier(0.2,0.8,0.3,1) both',
-            }}
+          <div
+            className="flex-none px-4 md:px-8 pt-3 pb-3 flex flex-col gap-2"
+            style={{ borderTop: `1px solid ${c.divider}` }}
           >
-            <div
-              style={{
-                fontFamily: 'Fragment Mono, monospace',
-                fontSize: 10,
-                letterSpacing: '0.16em',
-                color: c.textMuted,
-                marginBottom: 22,
-              }}
-            >
-              {current.eyebrow}
-            </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: 'Instrument Serif, serif',
-                fontSize: 'clamp(42px, 7.2vw, 88px)',
-                fontWeight: 400,
-                lineHeight: 1,
-                letterSpacing: '-0.035em',
-                fontStyle: current.stage === 'received' ? 'italic' : 'normal',
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {current.title}
-            </h1>
-
-            <p
-              style={{
-                maxWidth: 620,
-                margin: '28px auto 0',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: 'clamp(13px, 1.5vw, 17px)',
-                lineHeight: 1.7,
-                color: c.textMuted,
-              }}
-            >
-              {current.body}
-            </p>
-          </section>
-
-          <div className="mt-10 flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2" aria-hidden="true">
-              {story.map((item, index) => (
-                <span
-                  key={item.stage}
+            <div className="flex flex-wrap gap-2">
+              {quickReplies.map(option => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handleQuickReply(option)}
+                  className="transition-all hover:-translate-y-px"
                   style={{
-                    display: 'block',
-                    width: index === step ? 24 : 5,
-                    height: 5,
+                    border: `1px solid ${isLight ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.18)'}`,
                     borderRadius: 999,
-                    background: c.text,
-                    opacity: index === step ? 0.68 : 0.17,
-                    transition: 'width 400ms ease, opacity 400ms ease',
+                    padding: '8px 12px',
+                    background: isLight ? 'rgba(255,255,255,.26)' : 'rgba(255,255,255,.05)',
+                    color: c.text,
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 12,
+                    lineHeight: 1,
+                    cursor: 'pointer',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
                   }}
-                />
+                >
+                  {option.label}
+                </button>
               ))}
             </div>
 
             {modelReady && (
               <button
                 type="button"
-                onClick={onSkip}
+                onClick={onContinue}
+                className="demo-ready-sparkle self-start mt-1 rounded-full px-4 py-2.5 text-xs font-medium transition-opacity hover:opacity-80"
                 style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: c.textMuted,
-                  fontFamily: 'Fragment Mono, monospace',
-                  fontSize: 8,
-                  letterSpacing: '0.08em',
-                  padding: '3px 5px',
-                  cursor: 'pointer',
-                  opacity: 0.7,
+                  border: `1px solid ${c.inputBorder}`,
+                  background: c.inputBg,
+                  color: c.inputText,
+                  fontFamily: 'Inter, sans-serif',
                 }}
               >
-                CONTINUE →
+                Your model is ready →
               </button>
             )}
           </div>
-        </section>
-      </main>
-    </div>
+        </div>
+      </div>
+    </ReflectionShell>
   )
 }

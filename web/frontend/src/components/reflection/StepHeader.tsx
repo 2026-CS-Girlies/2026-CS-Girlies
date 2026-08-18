@@ -3,17 +3,32 @@ import { RotateCcw } from 'lucide-react'
 import { tk } from '@/theme/tokens'
 
 type Props = {
-  current: string
-  total: string
+  current?: string
+  total?: string
   isLight: boolean
   onBack?: () => void
   onRestart?: () => void
   restartLabel?: string
   desktopLabel?: string
+  leftLabel?: string
+  rightLabel?: string
+  simpleNav?: boolean
   className?: string
 }
 
-export default function StepHeader({ current, total, isLight, onBack, onRestart, restartLabel = 'RESET CONVERSATION', desktopLabel, className = '' }: Props) {
+export default function StepHeader({
+  current,
+  total,
+  isLight,
+  onBack,
+  onRestart,
+  restartLabel = 'RESET CONVERSATION',
+  desktopLabel,
+  leftLabel = 'Home',
+  rightLabel = 'End',
+  simpleNav = false,
+  className = '',
+}: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const c = tk(isLight)
@@ -25,6 +40,30 @@ export default function StepHeader({ current, total, isLight, onBack, onRestart,
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [])
+
+  if (simpleNav) {
+    return (
+      <div className={`relative z-10 flex items-center justify-between flex-none ${className}`}>
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-xs transition-opacity hover:opacity-60"
+          style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}
+        >
+          {leftLabel}
+        </button>
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="text-xs transition-opacity hover:opacity-60"
+          style={{ fontFamily: 'Fragment Mono, monospace', color: c.textMuted }}
+        >
+          {rightLabel}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className={`relative z-10 flex items-center justify-between flex-none gap-2 ${className}`}>

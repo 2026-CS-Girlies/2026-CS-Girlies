@@ -28,8 +28,8 @@ export default function ChatPanel({ isLight, messages, openingThought, input, on
   const c = tk(isLight)
 
   return (
-    <div className="relative z-10 flex-1 flex flex-col mx-3 md:mx-6 mb-3 md:mb-5 rounded-[24px] overflow-hidden" style={{ background: c.panelBg, border: `1px solid ${c.border}`, backdropFilter: 'blur(28px) saturate(1.4)', boxShadow: c.panelShadow }}>
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 flex flex-col gap-3 md:gap-4">
+    <div className="relative z-10 flex-1 min-h-0 flex flex-col rounded-[24px] overflow-hidden" style={{ background: c.panelBg, border: `1px solid ${c.border}`, backdropFilter: 'blur(28px) saturate(1.4)', boxShadow: c.panelShadow }}>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-4 flex flex-col gap-3 md:gap-4">
         <ChatBubble role="user" isLight={isLight} quoted><p className="font-medium">"{openingThought}"</p></ChatBubble>
 
         {messages.map(message => (
