@@ -1,5 +1,5 @@
 export const PRIVACY_NOTE = {
-  title: 'A note before you begin',
-  body: 'Still True is a guided self-reflection tool, not therapy, diagnosis, or medical advice. Your conversations are not saved by Still True. Some content may be processed temporarily by the selected AI provider to generate responses.',
-  link: 'Learn how your privacy is protected',
+  title: 'A private space to reflect',
+  body: 'Still True is a self-reflection tool, not therapy or medical care. We don’t save your conversations or personal information, and you can check the code yourself to see how it works.',
+  link: 'Learn more about privacy',
 }
