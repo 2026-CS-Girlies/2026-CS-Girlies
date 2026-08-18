@@ -125,6 +125,10 @@ export default function App() {
           }}
           onBack={() => setScreen('landing')}
           onRestart={restart}
+          onBgChange={setBg}
+          onSoundChange={setSoundId}
+          activeThemeId={activeThemeId}
+          onThemeId={setActiveThemeId}
         />
       )}
 
@@ -156,6 +160,10 @@ export default function App() {
           onBack={() => setScreen('conversation')}
           onRestart={restart}
           demoSummary={demoMode ? DEMO_SUMMARY : undefined}
+          onBgChange={setBg}
+          onSoundChange={setSoundId}
+          activeThemeId={activeThemeId}
+          onThemeId={setActiveThemeId}
         />
       )}
 
