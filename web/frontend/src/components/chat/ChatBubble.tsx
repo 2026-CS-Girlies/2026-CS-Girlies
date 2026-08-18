@@ -19,6 +19,7 @@ export default function ChatBubble({ role, isLight, children, quoted = false }: 
         style={{
           fontFamily: 'Inter, sans-serif',
           fontWeight: 500,
+          whiteSpace: 'pre-wrap',
           ...(isUser
             ? { background: c.userBubbleBg, border: `1px solid ${c.userBubbleBorder}`, color: c.userBubbleText }
             : { background: c.asstBubbleBg, border: `1px solid ${c.asstBubbleBorder}`, color: c.asstBubbleText }),

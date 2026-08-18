@@ -42,12 +42,12 @@ export default function ReceivingScreen({
 
   const story = useMemo<StoryStep[]>(
     () => [
-      {
-        stage: 'received',
-        eyebrow: 'THOUGHT RECEIVED',
-        title: `“${thought}”`,
-        body: 'We’ll use a simple CBT-inspired process to look at this thought from more than one angle.',
-      },
+      // {
+      //   stage: 'received',
+      //   eyebrow: 'THOUGHT RECEIVED',
+      //   title: `“${thought}”`,
+      //   body: 'We’ll use a simple CBT-inspired process to look at this thought from more than one angle.',
+      // },
       {
         stage: 'thought',
         eyebrow: '01 · THE THOUGHT',

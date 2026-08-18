@@ -10,6 +10,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import HackathonFooter from './components/layout/HackathonFooter'
 
 import { startConversation } from './services/conversationApi'
+import { DEMO_START_RESPONSE, DEMO_SUMMARY } from './data/demoConversation'
 import { hexLuminance, measureImageBrightness } from './theme/background'
 import type { ConversationResponse } from './types/conversation'
 import type { Screen } from './types/navigation'
@@ -25,6 +26,7 @@ export default function App() {
   const [isLight, setIsLight] = useState(false)
   const [soundId, setSoundId] = useState<SoundId>('none')
   const [activeThemeId, setActiveThemeId] = useState<ThemeId | null>('none')
+  const [demoMode, setDemoMode] = useState(false)
 
   const navigate = (nextScreen: Screen) => {
     setScreen(nextScreen)
@@ -43,20 +45,21 @@ export default function App() {
   }, [bg])
 
   useEffect(() => {
-    if (screen === 'receiving' && isModelReady) {
+    if (screen === 'receiving' && isModelReady && (!demoMode || receivingFinished)) {
       setScreen('conversation')
     }
-  }, [screen, isModelReady])
+  }, [screen, isModelReady, demoMode, receivingFinished])
 
-  const beginReflection = async (newThought: string) => {
+  const beginReflection = async (newThought: string, useDemo = false) => {
     setThought(newThought)
+    setDemoMode(useDemo)
     setConversationId(null)
     setConversationStart(null)
     setReceivingFinished(false)
     setScreen('receiving')
 
     try {
-      const response = await startConversation(newThought)
+      const response = useDemo ? DEMO_START_RESPONSE : await startConversation(newThought)
 
       console.log('[START RESPONSE]', response)
       console.log('[START MESSAGE]', response.message)
@@ -74,6 +77,7 @@ export default function App() {
     setConversationId(null)
     setConversationStart(null)
     setReceivingFinished(false)
+    setDemoMode(false)
     setScreen('landing')
   }
 
@@ -138,6 +142,7 @@ export default function App() {
           initialConversation={conversationStart}
           bg={bg}
           isLight={isLight}
+          demoMode={demoMode}
           onComplete={id => {
             setConversationId(id)
             setScreen('finalReflection')
@@ -154,6 +159,7 @@ export default function App() {
           isLight={isLight}
           onBack={() => setScreen('conversation')}
           onRestart={restart}
+          demoSummary={demoMode ? DEMO_SUMMARY : undefined}
         />
       )}
 

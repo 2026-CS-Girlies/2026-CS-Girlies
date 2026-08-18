@@ -17,6 +17,7 @@ type Props = {
   isLight: boolean
   onBack: () => void
   onRestart: () => void
+  demoSummary?: ModelSummaryData
 }
 
 export const getSummaryItems = (summary?: ModelSummaryData) => [
@@ -27,7 +28,7 @@ export const getSummaryItems = (summary?: ModelSummaryData) => [
 ] as const
 
 
-export default function FinalReflectionPage({ conversationId, bg, isLight, onBack, onRestart }: Props) {
+export default function FinalReflectionPage({ conversationId, bg, isLight, onBack, onRestart, demoSummary }: Props) {
   const c = tk(isLight)
   const [leaving, setLeaving] = useState(false)
   const [summary, setSummary] = useState<ModelSummaryData>()
@@ -41,6 +42,11 @@ export default function FinalReflectionPage({ conversationId, bg, isLight, onBac
         setSummaryLoading(true)
         setSummaryError('')
 
+        if (demoSummary) {
+          setSummary(demoSummary)
+          return
+        }
+
         const response = await getConversationSummary(conversationId)
         console.log('[QWEN FINAL SUMMARY]', response.data)
         setSummary(response.data)
@@ -53,7 +59,7 @@ export default function FinalReflectionPage({ conversationId, bg, isLight, onBac
     }
 
     void loadSummary()
-  }, [conversationId])
+  }, [conversationId, demoSummary])
 
   const handleDownload = () => {
     const now = new Date()

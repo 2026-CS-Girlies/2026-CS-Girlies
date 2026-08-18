@@ -3,6 +3,7 @@ type Props = {
   isLoading?: boolean
   onReady: () => void
   onHelp: () => void
+  emphasizeReady?: boolean
 }
 
 function ChangedIcon() {
@@ -23,7 +24,7 @@ function InfoIcon() {
   )
 }
 
-export default function ReflectionGuideActions({ isLight, isLoading = false, onReady, onHelp }: Props) {
+export default function ReflectionGuideActions({ isLight, isLoading = false, onReady, onHelp, emphasizeReady = false }: Props) {
   const buttonStyle = {
     fontFamily: 'Inter, sans-serif',
     fontWeight: 500,
@@ -34,7 +35,7 @@ export default function ReflectionGuideActions({ isLight, isLoading = false, onR
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-0.5">
-      <button type="button" onClick={onReady} disabled={isLoading} className="flex items-center gap-[6px] px-3 py-1.5 rounded-[10px] text-xs whitespace-nowrap transition-all duration-150 hover:opacity-80 active:scale-95 disabled:opacity-40" style={buttonStyle}>
+      <button type="button" onClick={onReady} disabled={isLoading} className={`flex items-center gap-[6px] px-3 py-1.5 rounded-[10px] text-xs whitespace-nowrap transition-all duration-150 hover:opacity-80 active:scale-95 disabled:opacity-40 ${emphasizeReady ? 'demo-ready-sparkle' : ''}`} style={buttonStyle}>
         <span className="flex items-center opacity-70"><ChangedIcon /></span>
         I'm Ready to See What Changed
       </button>
