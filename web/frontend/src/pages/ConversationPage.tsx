@@ -241,9 +241,17 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
               bottomRef={bottomRef}
               inputRef={inputRef}
               inputReadOnly={demoMode}
-              inputActions={phase === 'reflection' ? (
-                <ReflectionGuideActions isLight={isLight} isLoading={isLoading} onReady={() => void finishReflection()} onModelInfo={showModelInfo} emphasizeReady={demoMode && demoReflectionComplete} />
-              ) : undefined}
+              inputActions={
+                <ReflectionGuideActions
+                  isLight={isLight}
+                  isLoading={isLoading}
+                  onReady={() => void finishReflection()}
+                  onModelInfo={showModelInfo}
+                  onEndDemo={demoMode ? () => setLeaving(true) : undefined}
+                  emphasizeReady={demoMode && demoReflectionComplete}
+                  summaryDisabled={phase !== 'reflection'}
+                />
+              }
             >
               {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} emphasizeComplete={demoMode && evidence.length >= DEMO_EVIDENCE_COUNT} />}
 
