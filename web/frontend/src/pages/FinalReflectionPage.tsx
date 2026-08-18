@@ -134,9 +134,45 @@ export default function FinalReflectionPage({ conversationId, bg, isLight, onBac
               )}
             </ContentCard>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <ActionButton variant="dark" onClick={onBack}>← Back</ActionButton>
-              <ActionButton variant="light" onClick={handleDownload} disabled={!summary}>Download Reflection</ActionButton>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <ActionButton
+                variant="dark"
+                isLight={isLight}
+                onClick={onBack}
+              >
+                ← Back
+              </ActionButton>
+
+              <ActionButton
+                variant="light"
+                isLight={isLight}
+                onClick={handleDownload}
+                disabled={!summary}
+              > 
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M7 2.5V9M4.5 6.5L7 9L9.5 6.5"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M3 10.5V11.5H11V10.5"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Download Reflection
+              </ActionButton>
             </div>
           </div>
 
