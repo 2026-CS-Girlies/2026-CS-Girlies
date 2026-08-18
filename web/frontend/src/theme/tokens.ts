@@ -44,7 +44,7 @@ export function tk(isLight: boolean) {
     cursor: isLight ? '#111' : '#fff',
     // card (summary)
     cardBg:     isLight ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,1)',
-    cardText:   '#111',
+    cardText:   isLight ? 'rgba(20,20,20,0.90)' : 'rgba(255,255,255,0.88)',
     cardMuted:  '#888',
   }
 }
