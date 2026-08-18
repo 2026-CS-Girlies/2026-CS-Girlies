@@ -34,6 +34,15 @@ type Props = {
 }
 
 const STEP_HELP_MESSAGE = "This step is for looking at the thought from different angles at your own pace. There isn't a required number of questions or a correct conclusion. Keep talking for as long as it feels useful, and choose when you're ready to see what changed."
+const MODEL_INFO_MESSAGE = `Crispers-14B is a language model designed for multi-turn cognitive restructuring conversations.
+
+It was developed from research on helping people identify and reconsider negative thoughts through supportive dialogue.
+
+Paper:
+https://aclanthology.org/2025.emnlp-main.1652/
+
+Hugging Face:
+https://huggingface.co/thu-coai/Crispers-7B-v1`
 
 export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart, initialConversation, demoMode = false, onBgChange, onSoundChange, activeThemeId, onThemeId }: Props) {
   const conversationId = initialConversation.conversation_id
@@ -194,6 +203,14 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
     })
   }
 
+  const showModelInfo = () => {
+    setMessages(prev => {
+      const last = prev[prev.length - 1]
+      if (last?.role === 'assistant' && last.text === MODEL_INFO_MESSAGE) return prev
+      return [...prev, { id: Date.now(), role: 'assistant', text: MODEL_INFO_MESSAGE }]
+    })
+  }
+
   const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') void sendMessage()
   }
@@ -225,7 +242,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
               inputRef={inputRef}
               inputReadOnly={demoMode}
               inputActions={phase === 'reflection' ? (
-                <ReflectionGuideActions isLight={isLight} isLoading={isLoading} onReady={() => void finishReflection()} onHelp={showStepHelp} emphasizeReady={demoMode && demoReflectionComplete} />
+                <ReflectionGuideActions isLight={isLight} isLoading={isLoading} onReady={() => void finishReflection()} onModelInfo={showModelInfo} emphasizeReady={demoMode && demoReflectionComplete} />
               ) : undefined}
             >
               {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} emphasizeComplete={demoMode && evidence.length >= DEMO_EVIDENCE_COUNT} />}

@@ -2,7 +2,7 @@ type Props = {
   isLight: boolean
   isLoading?: boolean
   onReady: () => void
-  onHelp: () => void
+  onModelInfo: () => void
   emphasizeReady?: boolean
 }
 
@@ -24,7 +24,55 @@ function InfoIcon() {
   )
 }
 
-export default function ReflectionGuideActions({ isLight, isLoading = false, onReady, onHelp, emphasizeReady = false }: Props) {
+function SummaryIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect
+        x="2.25"
+        y="1.75"
+        width="9.5"
+        height="10.5"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M4.5 4.5h5M4.5 7h5M4.5 9.5h3.25"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+
+function ModelIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect
+        x="2"
+        y="3"
+        width="10"
+        height="8"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <circle cx="5" cy="7" r=".8" fill="currentColor" />
+      <circle cx="9" cy="7" r=".8" fill="currentColor" />
+      <path
+        d="M7 1.5V3M4.5 9h5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+
+export default function ReflectionGuideActions({ isLight, isLoading = false, onReady, onModelInfo, emphasizeReady = false }: Props) {
   const buttonStyle = {
     fontFamily: 'Inter, sans-serif',
     fontWeight: 500,
@@ -36,14 +84,15 @@ export default function ReflectionGuideActions({ isLight, isLoading = false, onR
   return (
     <div className="flex gap-2 overflow-x-auto pb-0.5">
       <button type="button" onClick={onReady} disabled={isLoading} className={`flex items-center gap-[6px] px-3 py-1.5 rounded-[10px] text-xs whitespace-nowrap transition-all duration-150 hover:opacity-80 active:scale-95 disabled:opacity-40 ${emphasizeReady ? 'demo-ready-sparkle' : ''}`} style={buttonStyle}>
-        <span className="flex items-center opacity-70"><ChangedIcon /></span>
-        I'm Ready to See What Changed
+        <span className="flex items-center opacity-70"><SummaryIcon /></span>
+        Summary
       </button>
 
-      <button type="button" onClick={onHelp} disabled={isLoading} className="flex items-center gap-[6px] px-3 py-1.5 rounded-[10px] text-xs whitespace-nowrap transition-all duration-150 hover:opacity-80 active:scale-95 disabled:opacity-40" style={buttonStyle}>
-        <span className="flex items-center opacity-70"><InfoIcon /></span>
-        Tell Me About This Step
+      <button type="button" onClick={onModelInfo} disabled={isLoading} className="flex items-center gap-[6px] px-3 py-1.5 rounded-[10px] text-xs whitespace-nowrap transition-all duration-150 hover:opacity-80 active:scale-95 disabled:opacity-40" style={buttonStyle}>
+        <span className="flex items-center opacity-70"><ModelIcon /></span>
+        About the Model
       </button>
+
     </div>
   )
 }
