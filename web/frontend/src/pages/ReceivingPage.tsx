@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import ChatBubble from '@/components/chat/ChatBubble'
+import HackathonFooter from '@/components/layout/HackathonFooter'
+import ThemeButton from '@/components/landing/ThemeButton'
 import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
 import { tk } from '@/theme/tokens'
-import type { BgConfig } from '@/types/theme'
+import type { BgConfig, SoundId, ThemeId } from '@/types/theme'
 
 type Props = {
   thought: string
@@ -14,6 +16,10 @@ type Props = {
   onContinue: () => void
   onBack: () => void
   onRestart: () => void
+  onBgChange: (bg: BgConfig) => void
+  onSoundChange: (sound: SoundId) => void
+  activeThemeId: ThemeId | null
+  onThemeId: (id: ThemeId | null) => void
 }
 
 type ChatMessage = {
@@ -82,6 +88,10 @@ export default function ReceivingPage({
   onContinue,
   onBack,
   onRestart,
+  onBgChange,
+  onSoundChange,
+  activeThemeId,
+  onThemeId,
 }: Props) {
   const c = tk(isLight)
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -204,11 +214,12 @@ export default function ReceivingPage({
   }
 
   return (
-    <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-hidden">
+    <ReflectionShell bg={bg} isLight={isLight} className="h-dvh flex flex-col overflow-hidden">
       <div className="flex flex-col flex-1 min-h-0">
         <StepHeader
-          current="00"
-          total="03"
+          simpleNav
+          leftLabel="Home"
+          rightLabel="End"
           isLight={isLight}
           onBack={onBack}
           onRestart={onRestart}
@@ -218,81 +229,102 @@ export default function ReceivingPage({
         <PageIntro
           isLight={isLight}
           title="While You Wait"
-          description={modelReady
-            ? 'Your model is ready. Start whenever you want.'
-            : 'The model is waking up. Explore something while it gets ready.'}
+          description={
+            modelReady
+              ? 'Your model is ready. Start whenever you want.'
+              : 'The model is waking up. Explore something while it gets ready.'
+          }
           className="px-5 md:px-8 pt-2 md:pt-2 pb-4 md:pb-5 flex-none"
         />
 
-        <div
-          className="relative z-10 flex-1 flex flex-col mx-3 md:mx-6 mb-3 md:mb-5 rounded-[24px] overflow-hidden"
-          style={{
-            background: c.panelBg,
-            border: `1px solid ${c.border}`,
-            backdropFilter: 'blur(28px) saturate(1.4)',
-            boxShadow: c.panelShadow,
-          }}
-        >
-          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 flex flex-col gap-3 md:gap-4">
-            <ChatBubble role="user" isLight={isLight} quoted>
-              <p className="font-medium">"{thought}"</p>
-            </ChatBubble>
-
-            {messages.map(message => (
-              <ChatBubble key={message.id} role={message.role} isLight={isLight}>
-                {message.text}
-              </ChatBubble>
-            ))}
-
-            <div ref={bottomRef} />
-          </div>
-
+        <div className="w-full max-w-4xl mx-auto flex-1 min-h-0 px-3 md:px-0 pb-3 md:pb-4 flex flex-col">
           <div
-            className="flex-none px-4 md:px-8 pt-3 pb-3 flex flex-col gap-2"
-            style={{ borderTop: `1px solid ${c.divider}` }}
+            className="relative z-10 flex-1 min-h-0 flex flex-col mx-3 md:mx-6 mb-10 rounded-[24px] overflow-hidden"
+            style={{
+              background: c.panelBg,
+              border: `1px solid ${c.border}`,
+              backdropFilter: 'blur(28px) saturate(1.4)',
+              boxShadow: c.panelShadow,
+            }}
           >
-            <div className="flex flex-wrap gap-2">
-              {quickReplies.map(option => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => handleQuickReply(option)}
-                  className="transition-all hover:-translate-y-px"
-                  style={{
-                    border: `1px solid ${isLight ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.18)'}`,
-                    borderRadius: 999,
-                    padding: '8px 12px',
-                    background: isLight ? 'rgba(255,255,255,.26)' : 'rgba(255,255,255,.05)',
-                    color: c.text,
-                    fontFamily: 'Inter, sans-serif',
-                    fontSize: 12,
-                    lineHeight: 1,
-                    cursor: 'pointer',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                  }}
-                >
-                  {option.label}
-                </button>
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 py-4 flex flex-col gap-3 md:gap-4">
+              <ChatBubble role="user" isLight={isLight} quoted>
+                <p className="font-medium">"{thought}"</p>
+              </ChatBubble>
+
+              {messages.map(message => (
+                <ChatBubble key={message.id} role={message.role} isLight={isLight}>
+                  {message.text}
+                </ChatBubble>
               ))}
+
+              <div ref={bottomRef} />
             </div>
 
-            {modelReady && (
-              <button
-                type="button"
-                onClick={onContinue}
-                className="demo-ready-sparkle self-start mt-1 rounded-full px-4 py-2.5 text-xs font-medium transition-opacity hover:opacity-80"
-                style={{
-                  border: `1px solid ${c.inputBorder}`,
-                  background: c.inputBg,
-                  color: c.inputText,
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
-                Your model is ready →
-              </button>
-            )}
+            <div
+              className="flex-none px-4 md:px-8 pt-3 pb-3 flex flex-col gap-2"
+              style={{ borderTop: `1px solid ${c.divider}` }}
+            >
+              <div className="flex flex-wrap gap-2">
+                {quickReplies.map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleQuickReply(option)}
+                    className="transition-all hover:-translate-y-px"
+                    style={{
+                      border: `1px solid ${isLight ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.18)'}`,
+                      borderRadius: 999,
+                      padding: '8px 12px',
+                      background: isLight ? 'rgba(255,255,255,.26)' : 'rgba(255,255,255,.05)',
+                      color: c.text,
+                      fontFamily: 'Inter, sans-serif',
+                      fontSize: 12,
+                      lineHeight: 1,
+                      cursor: 'pointer',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {modelReady && (
+                <button
+                  type="button"
+                  onClick={onContinue}
+                  className="demo-ready-sparkle self-start mt-1 rounded-full px-4 py-2.5 text-xs font-medium transition-opacity hover:opacity-80"
+                  style={{
+                    border: `1px solid ${c.inputBorder}`,
+                    background: c.inputBg,
+                    color: c.inputText,
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Your model is ready →
+                </button>
+              )}
+            </div>
           </div>
+
+          <div className="absolute bottom-4 right-4 z-30">
+            <ThemeButton
+              isLight={isLight}
+              activeThemeId={activeThemeId}
+              inline
+              onTheme={(newBg, newSound, id) => {
+                onBgChange(newBg)
+                onSoundChange(newSound)
+                onThemeId(id)
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="flex-none">
+          <HackathonFooter isLight={isLight} />
         </div>
       </div>
     </ReflectionShell>

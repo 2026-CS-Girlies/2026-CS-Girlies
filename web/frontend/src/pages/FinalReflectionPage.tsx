@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import DustCanvas from '@/components/animation/DustCanvas'
 import ActionButton from '@/components/reflection/ActionButton'
+import HackathonFooter from '@/components/layout/HackathonFooter'
+import ThemeButton from '@/components/landing/ThemeButton'
 import ContentCard from '@/components/reflection/ContentCard'
 import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionField from '@/components/reflection/ReflectionField'
@@ -9,7 +11,9 @@ import StepHeader from '@/components/reflection/StepHeader'
 import { getConversationSummary } from '@/services/conversationApi'
 import { tk } from '@/theme/tokens'
 import type { ModelSummaryData } from '@/types/conversation'
-import type { BgConfig } from '@/types/theme'
+import type { BgConfig, SoundId, ThemeId } from '@/types/theme'
+
+
 
 type Props = {
   conversationId: string
@@ -18,6 +22,10 @@ type Props = {
   onBack: () => void
   onRestart: () => void
   demoSummary?: ModelSummaryData
+  onBgChange: (bg: BgConfig) => void
+  onSoundChange: (sound: SoundId) => void
+  activeThemeId: ThemeId | null
+  onThemeId: (id: ThemeId | null) => void
 }
 
 export const getSummaryItems = (summary?: ModelSummaryData) => [
@@ -28,7 +36,7 @@ export const getSummaryItems = (summary?: ModelSummaryData) => [
 ] as const
 
 
-export default function FinalReflectionPage({ conversationId, bg, isLight, onBack, onRestart, demoSummary }: Props) {
+export default function FinalReflectionPage({ conversationId, bg, isLight, onBack, onRestart, demoSummary, onBgChange, onSoundChange, activeThemeId, onThemeId }: Props) {
   const c = tk(isLight)
   const [leaving, setLeaving] = useState(false)
   const [summary, setSummary] = useState<ModelSummaryData>()
@@ -88,12 +96,31 @@ export default function FinalReflectionPage({ conversationId, bg, isLight, onBac
     <>
       {leaving && <DustCanvas isLight={isLight} onDone={onRestart} />}
 
-      <ReflectionShell bg={bg} isLight={isLight} className="flex flex-col overflow-auto px-5 md:px-8 py-6">
-        <div style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'scale(0.96)' : 'scale(1)', filter: leaving ? 'blur(10px)' : 'blur(0)', transition: leaving ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in' : 'none' }}>
-          <StepHeader current="03" total="03" isLight={isLight} onRestart={() => setLeaving(true)} restartLabel="START A NEW REFLECTION" className="pb-4" />
+      <ReflectionShell bg={bg} isLight={isLight} className="h-dvh flex flex-col overflow-hidden">
+        <div
+          className="flex flex-col flex-1 min-h-0"
+          style={{
+            opacity: leaving ? 0 : 1,
+            transform: leaving ? 'scale(0.96)' : 'scale(1)',
+            filter: leaving ? 'blur(10px)' : 'blur(0)',
+            transition: leaving
+              ? 'opacity 0.55s ease-in, transform 0.6s ease-in, filter 0.5s ease-in'
+              : 'none',
+          }}
+        >
+
+          <StepHeader
+            simpleNav
+            leftLabel="Back"
+            rightLabel="Start Over"
+            isLight={isLight}
+            onBack={onBack}
+            onRestart={() => setLeaving(true)}
+            className="px-5 md:px-8 pt-4 md:pt-6 pb-1 md:pb-4"
+          />
 
           <div className="relative z-10 w-full max-w-[900px] mx-auto flex flex-col items-center gap-6 md:gap-8 pb-8">
-            <PageIntro isLight={isLight} title="A Clearer View" description="Here’s how your perspective changed through the conversation — including what stayed uncertain." maxWidth="max-w-xl" />
+            <PageIntro isLight={isLight} title="A Clearer View" description="Here’s how your perspective changed through the conversation." maxWidth="max-w-xl" />
 
             <ContentCard isLight={isLight}>
               {summaryLoading ? (
@@ -103,18 +130,34 @@ export default function FinalReflectionPage({ conversationId, bg, isLight, onBac
               ) : (
                 <>
                   {items.map(([label, value]) => <ReflectionField key={label} label={label} value={value} isLight={isLight} />)}
-                  <p className="text-sm text-center pt-2" style={{ fontFamily: 'Inter, sans-serif', color: c.cardMuted }}>This reflection belongs to you. Keep what feels useful and revise anything that doesn’t.</p>
                 </>
               )}
             </ContentCard>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <ActionButton variant="light" onClick={onBack}>← Back</ActionButton>
-              <ActionButton onClick={handleDownload} disabled={!summary}>Download Reflection</ActionButton>
+              <ActionButton variant="dark" onClick={onBack}>← Back</ActionButton>
+              <ActionButton variant="light" onClick={handleDownload} disabled={!summary}>Download Reflection</ActionButton>
             </div>
           </div>
+
+          <div className="absolute bottom-4 right-4 z-30">
+            <ThemeButton
+              isLight={isLight}
+              activeThemeId={activeThemeId}
+              inline
+              onTheme={(newBg, newSound, id) => {
+                onBgChange(newBg)
+                onSoundChange(newSound)
+                onThemeId(id)
+              }}
+            />
+          </div>
         </div>
-      </ReflectionShell>
+
+        <div className="flex-none">
+          <HackathonFooter isLight={isLight} />
+        </div>
+    </ReflectionShell >
     </>
   )
 }
