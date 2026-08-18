@@ -85,12 +85,11 @@ def start_conversation(request: StartConversationRequest):
         raise HTTPException(status_code=500, detail="Model request failed") from exc
 
     
-    print("[CONFIG] OLLAMA_BASE_URL =", OLLAMA_BASE_URL)
-    print("[CONFIG] CHAT_MODEL =", CHAT_MODEL)
-    print("[CONFIG] SUMMARY_MODEL =", SUMMARY_MODEL)
+    # print("[CONFIG] OLLAMA_BASE_URL =", OLLAMA_BASE_URL)
+    # print("[CONFIG] CHAT_MODEL =", CHAT_MODEL)
+    # print("[CONFIG] SUMMARY_MODEL =", SUMMARY_MODEL)
+    # print(f"[START] {conversation_id}: {initial_thought}")
 
-
-    print(f"[START] {conversation_id}: {initial_thought}")
     return _build_response(conversation_id, engine, message)
 
 
@@ -108,8 +107,8 @@ async def send_message(conversation_id: str, request: MessageRequest):
         print("[MODEL ERROR] send_message:", exc)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    print("[FASTAPI RESULT]", message)
-    print("[PHASE]", engine.state["phase"])
+    # print("[FASTAPI RESULT]", message)
+    # print("[PHASE]", engine.state["phase"])
     return _build_response(conversation_id, engine, message)
 
 
@@ -166,7 +165,7 @@ async def complete_reflection(conversation_id: str):
 
     response = _build_response(conversation_id, engine)
 
-    print("[REFLECTION COMPLETE RESPONSE]", response)
+    # print("[REFLECTION COMPLETE RESPONSE]", response)
     return response
 
 

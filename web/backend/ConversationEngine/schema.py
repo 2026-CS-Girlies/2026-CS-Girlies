@@ -1,10 +1,15 @@
 from pydantic import BaseModel
+from typing import Literal
 
 
-class WorkingBeliefExtraction(BaseModel):
-    message: str
-    working_belief: str | None = None
-    belief_clear: bool = False
+# class WorkingBeliefExtraction(BaseModel):
+#     message: str
+#     working_belief: str | None = None
+#     belief_clear: bool = False
+
+class WorkingBeliefDecision(BaseModel):
+    decision: Literal["belief", "needs_question"]
+    message: str = ""
 
 
 class FinalSummaryExtraction(BaseModel):

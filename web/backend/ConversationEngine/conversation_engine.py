@@ -4,7 +4,7 @@ from .model import crispers_llm, extractor_llm, working_belief_llm
 from .prompts.final_summary import FINAL_SUMMARY_PROMPT
 from .prompts.reflection import reflection_prompt
 from .prompts.working_belief import working_belief_prompt
-from .schema import FinalSummaryExtraction, WorkingBeliefExtraction
+from .schema import FinalSummaryExtraction, WorkingBeliefDecision, WorkingBeliefDecision
 from .state import StillTrueState
 
 
@@ -33,72 +33,42 @@ class ConversationEngine:
 
         raise ValueError(f"Unknown phase: {phase}")
 
+
     def _handle_working_belief_phase(self, user_message: str) -> str:
         history = self.state["working_belief_messages"]
 
         prompt_input = {
             "history": history,
             "user_message": user_message,
-            "initial_thought": self.state.get("initial_thought", ""),
-            "working_belief": self.state.get("working_belief") or "",
         }
 
-        result = working_belief_llm.with_structured_output(
-            WorkingBeliefExtraction
-        ).invoke(
-            working_belief_prompt.invoke(prompt_input).to_messages()
-        )
+        # prompt to message
+        message = working_belief_prompt.invoke(prompt_input).to_messages()
+        result = working_belief_llm.with_structured_output(WorkingBeliefDecision).invoke(message)
 
-        # print("[WORKING BELIEF RESULT]", result)
-        # print("[WORKING BELIEF]", repr(result.working_belief))
-        # print("[BELIEF CLEAR]", result.belief_clear)
-        # print("[MESSAGE]", repr(result.message))
+        print("[DECISION]", result.decision)
+        print("[MESSAGE]", repr(result.message))
+        print("====================================\n")
 
         history.append(HumanMessage(content=user_message))
 
-        # --------------------------------
-        # VALID BELIEF FOUND
-        # --------------------------------
-        if result.belief_clear:
-            if result.working_belief:
-                self.state["working_belief"] = result.working_belief.strip()
-
+        if result.decision == "belief":
+            self.state["working_belief"] = user_message.strip()
             self.state["phase"] = "belief_confirmation"
 
+            print("[WORKING BELIEF]", repr(self.state["working_belief"]))
             print("[PHASE] -> belief_confirmation")
-            print(
-                "[STATE WORKING BELIEF]",
-                self.state["working_belief"]
-            )
 
             return ""
 
-        # --------------------------------
-        # BELIEF NOT CLEAR YET
-        # --------------------------------
-
-        # Never save working_belief when belief_clear=False.
         assistant_message = (result.message or "").strip()
 
-        # Recover from small-model field mixup.
-        if not assistant_message and result.working_belief:
-            assistant_message = result.working_belief.strip()
-
-            print(
-                "[FIELD RECOVERY] working_belief -> message:",
-                repr(assistant_message)
-            )
-
-        if not assistant_message:
-            assistant_message = (
-                "What thought or feeling would you like to look at?"
-            )
-
-        history.append(AIMessage(content=assistant_message))
+        if assistant_message:
+            history.append(AIMessage(content=assistant_message))
 
         return assistant_message
 
-    
+
 
     def _handle_evidence_form_phase(self, user_message: str) -> str:
         evidence = user_message.strip()
