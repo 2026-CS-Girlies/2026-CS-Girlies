@@ -37,9 +37,23 @@ export default function LandingPage({ onBegin, bg, onBgChange, isLight, soundId,
           <button
             type="button"
             onClick={startDemo}
-            className="self-start text-[11px] min-[960px]:text-[12px] px-3 py-1.5 rounded-full transition-all hover:opacity-80"
+            className="self-start flex items-center gap-2 text-[11px] min-[960px]:text-[12px] px-3 py-1.5 rounded-full transition-all hover:opacity-80"
             style={{ fontFamily: 'Inter, sans-serif', color: c.textMuted, border: `1px solid ${c.border}`, background: isLight ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}
-          >
+          > 
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 3l1.2 3.3L16.5 7.5l-3.3 1.2L12 12l-1.2-3.3L7.5 7.5l3.3-1.2L12 3Z" />
+              <path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14Z" />
+              <path d="M5 13l.7 1.8L7.5 15.5l-1.8.7L5 18l-.7-1.8-1.8-.7 1.8-.7L5 13Z" />
+            </svg>
             See the Demo
           </button>
 

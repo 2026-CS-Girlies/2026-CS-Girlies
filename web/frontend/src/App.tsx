@@ -32,8 +32,7 @@ export default function App() {
     setScreen(nextScreen)
   }
 
-  const isModelReady = Boolean(conversationStart?.message?.trim())
-
+  const isModelReady = Boolean(conversationStart)
   useAmbientSound(soundId)
 
   useEffect(() => {

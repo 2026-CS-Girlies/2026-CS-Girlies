@@ -10,6 +10,8 @@ import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
 import { conversationPhaseConfig } from '@/config/conversationPhases'
 import { DEMO_TURNS } from '@/data/demoConversation'
+
+const DEMO_EVIDENCE_COUNT = DEMO_TURNS.filter(turn => turn.phase === 'evidence_form').length
 import { completeEvidenceCollection, completeReflection, confirmBelief, sendConversationMessage } from '@/services/conversationApi'
 import type { Message } from '@/types/chat'
 import type { ConversationPhase, ConversationResponse } from '@/types/conversation'
@@ -69,14 +71,16 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   }
 
   const sendMessage = async () => {
-    const trimmed = input.trim()
-    if (!trimmed || inputDisabled) return
+    if (inputDisabled) return
 
     const demoTurn = demoMode ? DEMO_TURNS[demoTurnIndex] : undefined
     if (demoMode && !demoTurn) return
 
+    const messageToSend = demoMode ? demoTurn!.user : input.trim()
+    if (!messageToSend) return
+
     setInput('')
-    setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: demoTurn?.user ?? trimmed }])
+    setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: messageToSend }])
 
     try {
       setIsLoading(true)
@@ -97,9 +101,9 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
           setDemoReflectionComplete(true)
         }
       } else {
-        const response = await sendConversationMessage(conversationId, trimmed)
+        const response = await sendConversationMessage(conversationId, messageToSend)
 
-        if (phase === 'evidence_form') setEvidence(prev => [...prev, trimmed])
+        if (phase === 'evidence_form') setEvidence(prev => [...prev, messageToSend])
 
         appendAssistantMessage(response.message)
         if (response.working_belief) setWorkingBelief(response.working_belief)
@@ -212,11 +216,12 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
             placeholder="Write what comes to mind…"
             bottomRef={bottomRef}
             inputRef={inputRef}
+            inputReadOnly={demoMode}
             inputActions={phase === 'reflection' ? (
               <ReflectionGuideActions isLight={isLight} isLoading={isLoading} onReady={() => void finishReflection()} onHelp={showStepHelp} emphasizeReady={demoMode && demoReflectionComplete} />
             ) : undefined}
           >
-            {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} />}
+            {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} emphasizeComplete={demoMode && evidence.length >= DEMO_EVIDENCE_COUNT} />}
 
             {phase === 'belief_confirmation' && workingBelief && (
               <ConfirmationBubble

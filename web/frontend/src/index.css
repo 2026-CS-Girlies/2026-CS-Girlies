@@ -145,17 +145,18 @@ html, body, #root {
 
 
 /* ─── Demo ready CTA ────────────────────────────────────────────────────── */
-@keyframes demoReadySparkle {
-  0% {
-    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+@keyframes demo-ready-sparkle {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), 0 0 0 rgba(255, 255, 255, 0);
+    filter: brightness(1);
   }
-
-  50% {
-    box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
+  45% {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.10), 0 0 18px rgba(255, 255, 255, 0.32);
+    filter: brightness(1.22);
   }
-
-  100% {
-    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  65% {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 10px rgba(255, 255, 255, 0.20);
+    filter: brightness(1.1);
   }
 }
 
@@ -186,6 +187,32 @@ html, body, #root {
 @media (prefers-reduced-motion: reduce) {
   .demo-ready-sparkle,
   .demo-ready-sparkle::after {
+    animation: none !important;
+  }
+}
+
+
+/* ─── Demo evidence CTA ─────────────────────────────────────────────────── */
+.demo-evidence-sparkle {
+  position: relative;
+  animation: demo-ready-sparkle 1.65s ease-in-out infinite;
+}
+
+.demo-evidence-sparkle::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.38) 48%, transparent 76%);
+  background-size: 220% 100%;
+  animation: demo-ready-shimmer 1.65s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-evidence-sparkle,
+  .demo-evidence-sparkle::after {
     animation: none !important;
   }
 }

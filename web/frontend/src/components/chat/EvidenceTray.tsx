@@ -7,6 +7,7 @@ type Props = {
   message?: string | null
 //   onEdit: () => void
   onComplete: () => void
+  emphasizeComplete?: boolean
 }
 
 export default function EvidenceTray({
@@ -16,6 +17,7 @@ export default function EvidenceTray({
   message,
 //   onEdit,
   onComplete,
+  emphasizeComplete = false,
 }: Props) {
   const c = tk(isLight)
 
@@ -91,7 +93,7 @@ export default function EvidenceTray({
             type="button"
             onClick={onComplete}
             disabled={isLoading}
-            className="text-sm px-4 py-2 rounded-full hover:opacity-80 disabled:opacity-40"
+            className={`text-sm px-4 py-2 rounded-full hover:opacity-80 disabled:opacity-40 ${emphasizeComplete ? 'demo-evidence-sparkle' : ''}`}
             style={{
               background: c.sendBg,
               border: `1px solid ${c.sendBorder}`,
