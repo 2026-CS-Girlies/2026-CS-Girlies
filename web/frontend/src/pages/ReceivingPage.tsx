@@ -68,16 +68,64 @@ const EXPERIENCED_REPLIES: QuickReply[] = [
 
 const TRAPS = [
   {
+    title: 'CATASTROPHIZING',
+    example: `“If this goes wrong, everything is going to fall apart.”`,
+  },
+  {
     title: 'ALL-OR-NOTHING THINKING',
     example: `“If I don't do this perfectly, I've completely failed.”`,
+  },
+  {
+    title: 'OVERGENERALIZATION',
+    example: `“I messed this up once. I always mess things up.”`,
+  },
+  {
+    title: 'PERSONALIZATION',
+    example: `“The meeting felt awkward. I must have done something wrong.”`,
+  },
+  {
+    title: 'MENTAL FILTERING',
+    example: `“Everyone liked my presentation, but I stumbled once, so it was terrible.”`,
+  },
+  {
+    title: 'FORTUNE TELLING',
+    example: `“I'm probably going to fail the interview anyway.”`,
   },
   {
     title: 'MIND READING',
     example: `“She didn't reply. She must be annoyed with me.”`,
   },
   {
-    title: 'CATASTROPHIZING',
-    example: `“If I mess this up, everything is going to fall apart.”`,
+    title: 'DISQUALIFYING THE POSITIVE',
+    example: `“They said I did a good job, but they were probably just being nice.”`,
+  },
+  {
+    title: 'JUMPING TO CONCLUSIONS',
+    example: `“My manager scheduled a meeting. Something must be wrong.”`,
+  },
+  {
+    title: 'EMOTIONAL REASONING',
+    example: `“I feel like I'm falling behind, so I must actually be behind.”`,
+  },
+  {
+    title: 'SHOULD STATEMENTS',
+    example: `“I should have my career figured out by now.”`,
+  },
+  {
+    title: 'COMPARING AND DESPAIRING',
+    example: `“Everyone my age seems more successful than me. I'm falling behind.”`,
+  },
+  {
+    title: 'BLAMING',
+    example: `“This project failed because my teammate ruined everything.”`,
+  },
+  {
+    title: 'CONTROL FALLACY',
+    example: `“If I can't control how this turns out, there's nothing I can do.”`,
+  },
+  {
+    title: 'EXTERNAL VALIDATION',
+    example: `“If people aren't impressed by what I'm doing, maybe I'm not doing well enough.”`,
   },
 ]
 
