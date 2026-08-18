@@ -9,6 +9,9 @@ import PageIntro from '@/components/reflection/PageIntro'
 import ReflectionShell from '@/components/reflection/ReflectionShell'
 import StepHeader from '@/components/reflection/StepHeader'
 import { conversationPhaseConfig } from '@/config/conversationPhases'
+import { DEMO_TURNS } from '@/data/demoConversation'
+
+const DEMO_EVIDENCE_COUNT = DEMO_TURNS.filter(turn => turn.phase === 'evidence_form').length
 import { completeEvidenceCollection, completeReflection, confirmBelief, sendConversationMessage } from '@/services/conversationApi'
 import type { Message } from '@/types/chat'
 import type { ConversationPhase, ConversationResponse } from '@/types/conversation'
@@ -22,11 +25,12 @@ type Props = {
   onBack: () => void
   onRestart: () => void
   onComplete: (conversationId: string) => void
+  demoMode?: boolean
 }
 
 const STEP_HELP_MESSAGE = "This step is for looking at the thought from different angles at your own pace. There isn't a required number of questions or a correct conclusion. Keep talking for as long as it feels useful, and choose when you're ready to see what changed."
 
-export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart, initialConversation }: Props) {
+export default function ConversationPage({ thought, bg, isLight, onComplete, onBack, onRestart, initialConversation, demoMode = false }: Props) {
   const conversationId = initialConversation.conversation_id
   const [messages, setMessages] = useState<Message[]>(() => {
     if (!initialConversation.message) return []
@@ -39,6 +43,8 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   const [phase, setPhase] = useState<ConversationPhase>(initialConversation.phase)
   const [workingBelief, setWorkingBelief] = useState<string | null>(initialConversation.working_belief)
   const [evidence, setEvidence] = useState<string[]>([])
+  const [demoReflectionComplete, setDemoReflectionComplete] = useState(false)
+  const [demoTurnIndex, setDemoTurnIndex] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const phaseConfig = conversationPhaseConfig[phase]
@@ -50,6 +56,12 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   }, [inputDisabled])
 
   useEffect(() => {
+    if (!demoMode || inputDisabled) return
+    const turn = DEMO_TURNS[demoTurnIndex]
+    if (turn) setInput(turn.user)
+  }, [demoMode, demoTurnIndex, inputDisabled])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading, phase, evidence])
 
@@ -59,23 +71,44 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
   }
 
   const sendMessage = async () => {
-    const trimmed = input.trim()
-    if (!trimmed || inputDisabled) return
+    if (inputDisabled) return
+
+    const demoTurn = demoMode ? DEMO_TURNS[demoTurnIndex] : undefined
+    if (demoMode && !demoTurn) return
+
+    const messageToSend = demoMode ? demoTurn!.user : input.trim()
+    if (!messageToSend) return
 
     setInput('')
-    setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: trimmed }])
+    setMessages(prev => [...prev, { id: Date.now(), role: 'user', text: messageToSend }])
 
     try {
       setIsLoading(true)
       setError('')
 
-      const response = await sendConversationMessage(conversationId, trimmed)
+      if (demoMode && demoTurn) {
+        const turn = demoTurn
 
-      if (phase === 'evidence_form') setEvidence(prev => [...prev, trimmed])
+        appendAssistantMessage(turn.assistant)
+        if (turn.workingBelief) setWorkingBelief(turn.workingBelief)
+        if (turn.nextPhase) setPhase(turn.nextPhase)
+        if (turn.phase === 'evidence_form') setEvidence(prev => [...prev, turn.user])
 
-      appendAssistantMessage(response.message)
-      if (response.working_belief) setWorkingBelief(response.working_belief)
-      setPhase(response.phase)
+        const nextIndex = demoTurnIndex + 1
+        setDemoTurnIndex(nextIndex)
+
+        if (nextIndex >= DEMO_TURNS.length) {
+          setDemoReflectionComplete(true)
+        }
+      } else {
+        const response = await sendConversationMessage(conversationId, messageToSend)
+
+        if (phase === 'evidence_form') setEvidence(prev => [...prev, messageToSend])
+
+        appendAssistantMessage(response.message)
+        if (response.working_belief) setWorkingBelief(response.working_belief)
+        setPhase(response.phase)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the message.')
     } finally {
@@ -90,10 +123,20 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       setIsLoading(true)
       setError('')
 
-      const response = await confirmBelief(conversationId, confirmed)
-      setPhase(response.phase)
-      if (response.working_belief) setWorkingBelief(response.working_belief)
-      appendAssistantMessage(response.message)
+      if (demoMode) {
+        if (confirmed) {
+          setPhase('evidence_form')
+          appendAssistantMessage(`Let's make the strongest case for that thought first.\n\nWhat evidence makes “I'm being left behind” feel true?`)
+        } else {
+          setPhase('working_belief')
+          appendAssistantMessage('What would be a more accurate way to say the thought that is bothering you?')
+        }
+      } else {
+        const response = await confirmBelief(conversationId, confirmed)
+        setPhase(response.phase)
+        if (response.working_belief) setWorkingBelief(response.working_belief)
+        appendAssistantMessage(response.message)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not confirm the thought.')
     } finally {
@@ -108,9 +151,14 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
       setIsLoading(true)
       setError('')
 
-      const response = await completeEvidenceCollection(conversationId)
-      setPhase(response.phase)
-      appendAssistantMessage(response.message)
+      if (demoMode) {
+        setPhase('reflection')
+        appendAssistantMessage(`Okay.\n\nSo there are real changes here:\n\n• Some tasks you learned are becoming automated.\n• There are newer technologies you don't know yet.\n• The skills employers ask for are changing.\n\nWe're not going to pretend those things aren't happening.\n\nLet's look at what they actually mean.\n\nStart with this one:\n\n“AI can automate things I spent years learning.”\n\nWhat can it do now that you used to do manually?`)
+      } else {
+        const response = await completeEvidenceCollection(conversationId)
+        setPhase(response.phase)
+        appendAssistantMessage(response.message)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not continue the reflection.')
     } finally {
@@ -124,7 +172,7 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
     try {
       setIsLoading(true)
       setError('')
-      await completeReflection(conversationId)
+      if (!demoMode) await completeReflection(conversationId)
       onComplete(conversationId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create your reflection.')
@@ -168,11 +216,12 @@ export default function ConversationPage({ thought, bg, isLight, onComplete, onB
             placeholder="Write what comes to mind…"
             bottomRef={bottomRef}
             inputRef={inputRef}
+            inputReadOnly={demoMode}
             inputActions={phase === 'reflection' ? (
-              <ReflectionGuideActions isLight={isLight} isLoading={isLoading} onReady={() => void finishReflection()} onHelp={showStepHelp} />
+              <ReflectionGuideActions isLight={isLight} isLoading={isLoading} onReady={() => void finishReflection()} onHelp={showStepHelp} emphasizeReady={demoMode && demoReflectionComplete} />
             ) : undefined}
           >
-            {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} />}
+            {phase === 'evidence_form' && <EvidenceTray evidence={evidence} isLight={isLight} isLoading={isLoading} onComplete={() => void finishEvidence()} emphasizeComplete={demoMode && evidence.length >= DEMO_EVIDENCE_COUNT} />}
 
             {phase === 'belief_confirmation' && workingBelief && (
               <ConfirmationBubble

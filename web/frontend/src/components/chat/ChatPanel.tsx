@@ -19,11 +19,12 @@ type Props = {
   completePlaceholder?: string
   bottomRef: RefObject<HTMLDivElement | null>
   inputRef?: RefObject<HTMLInputElement | null>
+  inputReadOnly?: boolean
   children?: ReactNode
   inputActions?: ReactNode
 }
 
-export default function ChatPanel({ isLight, messages, openingThought, input, onInputChange, onSend, onKeyDown, isLoading, isComplete, error, placeholder = 'Type your response...', completePlaceholder = 'Ready for your reflection', bottomRef, inputRef, children, inputActions }: Props) {
+export default function ChatPanel({ isLight, messages, openingThought, input, onInputChange, onSend, onKeyDown, isLoading, isComplete, error, placeholder = 'Type your response...', completePlaceholder = 'Ready for your reflection', bottomRef, inputRef, inputReadOnly = false, children, inputActions }: Props) {
   const c = tk(isLight)
 
   return (
@@ -45,7 +46,7 @@ export default function ChatPanel({ isLight, messages, openingThought, input, on
         {inputActions}
 
         <div className="flex items-center gap-3 rounded-2xl px-4 py-2.5 md:py-3" style={{ background: c.inputBg, border: `1px solid ${c.inputBorder}`, backdropFilter: 'blur(8px)' }}>
-          <input ref={inputRef} className="flex-1 text-sm outline-none bg-transparent min-w-0" style={{ fontFamily: 'Inter, sans-serif', color: c.inputText }} placeholder={isComplete ? completePlaceholder : placeholder} value={input} onChange={event => onInputChange(event.target.value)} onKeyDown={onKeyDown} disabled={isLoading || isComplete} />
+          <input ref={inputRef} className={`flex-1 text-sm outline-none bg-transparent min-w-0 ${inputReadOnly ? 'cursor-default' : ''}`} style={{ fontFamily: 'Inter, sans-serif', color: c.inputText }} placeholder={isComplete ? completePlaceholder : placeholder} value={input} onChange={event => { if (!inputReadOnly) onInputChange(event.target.value) }} onKeyDown={onKeyDown} readOnly={inputReadOnly} disabled={isLoading || isComplete} />
           <button onClick={onSend} disabled={isLoading || isComplete} className="w-8 h-8 rounded-full flex items-center justify-center disabled:opacity-40 transition-all active:scale-90" style={{ background: c.sendBg, border: `1px solid ${c.sendBorder}` }} aria-label="Send message">
             <SendIcon color={isLight ? '#444' : '#BBBBBB'} />
           </button>
