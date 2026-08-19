@@ -71,9 +71,8 @@ def get_ollama_env():
         **os.environ,
         "OLLAMA_MODELS": OLLAMA_MODELS_DIR,
         "OLLAMA_HOST": "127.0.0.1:11434",
-        # Keep a recently used model in memory for a short period.
-        # You can tune this later.
         "OLLAMA_KEEP_ALIVE": "5m",
+        "OLLAMA_NUM_PARALLEL": "4",
     }
 
 
@@ -301,11 +300,12 @@ def register_models():
     volumes={
         MODEL_MOUNT: model_volume,
     },
-    min_containers=1,
+    min_containers=0,
     max_containers=1,
     scaledown_window=300,
     timeout=1800,
 )
+@modal.concurrent(max_inputs=4)
 class Backend:
 
     @modal.enter()
