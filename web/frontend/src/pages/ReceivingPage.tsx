@@ -17,6 +17,7 @@ type Props = {
   onContinue: () => void
   onBack: () => void
   onRestart: () => void
+  onStartDemo: () => void
   onBgChange: (bg: BgConfig) => void
   onSoundChange: (sound: SoundId) => void
   activeThemeId: ThemeId | null
@@ -60,11 +61,14 @@ const TRAP_REPLIES: QuickReply[] = [
 ]
 
 const EXPERIENCED_REPLIES: QuickReply[] = [
+  { id: 'joke', label: 'Tell me a dad joke' },
   { id: 'play', label: 'Give me a quick prompt' },
   { id: 'worksheet', label: 'Browse a mini worksheet' },
   { id: 'research', label: 'Why does this work?' },
   { id: 'home', label: 'Back' },
 ]
+
+
 
 const TRAPS = [
   {
@@ -137,6 +141,7 @@ export default function ReceivingPage({
   onContinue,
   onBack,
   onRestart,
+  onStartDemo,
   onBgChange,
   onSoundChange,
   activeThemeId,
@@ -192,11 +197,8 @@ export default function ReceivingPage({
         break
 
       case 'demo':
-        appendAssistant(
-          `Here's a quick example. Someone thinks: “I'm falling behind because AI is changing everything.” Still True might ask: “What are you afraid all this change means about you?” That helps move from the situation to the thought underneath it.`,
-        )
-        setQuickReplies(DEMO_REPLIES)
-        break
+        onStartDemo()
+        return
 
       case 'demo-more':
         appendAssistant(
@@ -239,11 +241,12 @@ export default function ReceivingPage({
         break
 
       case 'worksheet':
-        appendAssistant(
-          `A tiny three-line worksheet:\n1. What happened?\n2. What did your mind say it meant?\n3. What evidence would make that conclusion more — or less — complete?`,
-        )
-        setQuickReplies(EXPERIENCED_REPLIES)
-        break
+      appendAssistant(
+        `If you'd like something more structured, here are some CBT worksheets you can explore:
+https://www.choosingtherapy.com/therapy-worksheets/cbt/`
+      )
+      setQuickReplies(EXPERIENCED_REPLIES)
+      break
 
       case 'research':
         appendAssistant(
@@ -255,6 +258,32 @@ export default function ReceivingPage({
       case 'home':
         appendAssistant(`What would you like to explore?`)
         setQuickReplies(MAIN_REPLIES)
+        break
+
+      case 'joke':
+        appendAssistant(
+            `Client: I’m terrified of the Backstreet boys
+
+Therapist: Tell me why
+
+Client: screams`
+        )
+        setQuickReplies([
+          { id: 'joke-another', label: 'Another one' },
+          { id: 'home', label: 'Back to topics' },
+        ])
+        break
+      
+      case 'joke-another':
+        appendAssistant(
+          `Why don't thoughts ever get lost?
+
+Because they always follow a train.`
+        )
+        setQuickReplies([
+          { id: 'joke', label: 'One more' },
+          { id: 'home', label: 'Back to topics' },
+        ])
         break
     }
   }

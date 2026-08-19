@@ -11,7 +11,7 @@ import HackathonFooter from './components/layout/HackathonFooter'
 import MobileWarning from './components/landing/MobileWarning'
 
 import { startConversation } from './services/conversationApi'
-import { DEMO_START_RESPONSE, DEMO_SUMMARY } from './data/demoConversation'
+import { DEMO_START_RESPONSE, DEMO_SUMMARY, DEMO_THOUGHT } from './data/demoConversation'
 import { hexLuminance, measureImageBrightness } from './theme/background'
 import type { ConversationResponse } from './types/conversation'
 import type { Screen } from './types/navigation'
@@ -56,21 +56,22 @@ export default function App() {
     setConversationId(null)
     setConversationStart(null)
     setReceivingFinished(false)
+    
+    if (useDemo) {
+    setConversationStart(DEMO_START_RESPONSE)
+    setScreen('conversation')
+    return
+    }
+
     setScreen('receiving')
 
     try {
-      const response = useDemo ? DEMO_START_RESPONSE : await startConversation(newThought)
-
-      console.log('[START RESPONSE]', response)
-      console.log('[START MESSAGE]', response.message)
-      console.log('[MODEL READY]', Boolean(response.message?.trim()))
-
-      setConversationStart(response)
+    const response = await startConversation(newThought)
+    setConversationStart(response)
     } catch (err) {
       console.error('[START CONVERSATION ERROR]', err)
       setScreen('landing')
-    }
-  }
+    }}
 
   const restart = () => {
     setThought('')
@@ -128,6 +129,7 @@ export default function App() {
           onContinue={() => {
             if (isModelReady) setScreen('conversation')
           }}
+          onStartDemo={() => beginReflection(DEMO_THOUGHT, true)}
           onBack={() => setScreen('landing')}
           onRestart={restart}
           onBgChange={setBg}
